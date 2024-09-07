@@ -1,12 +1,15 @@
 import sys
-
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFontMetrics, QKeySequence
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLabel, QLineEdit,
+import os
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFontMetrics, QKeySequence
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLabel, QLineEdit,
                              QMainWindow, QStyledItemDelegate, QTableWidget, QTableWidgetItem,
                              QVBoxLayout, QHBoxLayout, QWidget, QDialog, QFileDialog, QPushButton,
-                             QDialogButtonBox, QFrame)
+                             QDialogButtonBox, QFrame, QCheckBox, QRadioButton, QGroupBox)
 
+from report2xlsx import export_to_report
+
+from searchFromDB import NotDecodingError, find_features_containing_point
 
 class AutoResizeDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
@@ -26,7 +29,7 @@ class AutoResizeDelegate(QStyledItemDelegate):
         font.setPointSize(base_size)
         metrics = QFontMetrics(font)
 
-        while metrics.width(text) > option.rect.width() or metrics.height() > option.rect.height():
+        while metrics.horizontalAdvance(text) > option.rect.width() or metrics.height() > option.rect.height():
             base_size -= 1
             font.setPointSize(base_size)
             metrics = QFontMetrics(font)
@@ -38,52 +41,148 @@ class AutoResizeDelegate(QStyledItemDelegate):
 
 class CommonInputDialog(QDialog):
     def __init__(self, parent=None):
-        super().__init__()
+        super().__init__(parent)
         self.initUI()
 
     def initUI(self):
-        mainframe = QWidget(self)
-        layout = QVBoxLayout(mainframe)
+
+        layout = QVBoxLayout(self)
         self.setWindowTitle("공통값 입력")
         self.texts = ["도선등급", "도선명", "설치년월일", "조사년월일", "조사자(직)", "조사자(성명)"]
         self.labels = []
         self.inputs = []
-        self.setFixedSize(210,220)
+        self.setFixedSize(210, 220)
 
         for text in self.texts:
-            hlayout = QHBoxLayout(mainframe)
-            label = QLabel(text, mainframe)
+            hlayout = QHBoxLayout()
+            label = QLabel(text)
             label.setFixedWidth(70)
-            input_value = QLineEdit(mainframe)
+            input_value = QLineEdit()
             input_value.setFixedWidth(110)
             hlayout.addWidget(label)
             hlayout.addWidget(input_value)
             self.labels.append(label)
-            self.inputs.append(input_value)            
+            self.inputs.append(input_value)
             layout.addLayout(hlayout)
 
-        self.line = QFrame(self)
+        self.line = QFrame()
         self.line.setFrameShape(QFrame.HLine)
         self.line.setFrameShadow(QFrame.Sunken)
 
         layout.addWidget(self.line)
-        
-        self.buttonBox = QDialogButtonBox(self)
+
+        self.buttonBox = QDialogButtonBox()
         self.buttonBox.setOrientation(Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
 
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
         layout.addWidget(self.buttonBox)
-        mainframe.setLayout(layout)
+
+        self.setLayout(layout)  # Set the layout to the dialog itself
+
+
+class ImagePathDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self._imagePath = ''
+        self._imageExt = ''
+        self.option = None
+        
+        self.initUI()
+
+    @property
+    def imagePath(self):
+        return self._imagePath
+    
+    @imagePath.setter
+    def imagePath(self, path):
+        self._imagePath = path
+
+    @property
+    def imageExt(self):
+        return self._imageExt
+    
+    @imageExt.setter
+    def imageExt(self, ext):
+        self._imageExt = ext
+
+
+    def initUI(self):
+        self.setWindowTitle("사진 폴더 선택")
+        main_layout = QVBoxLayout(self)
+
+        path_frame = QWidget()
+        path_layout= QHBoxLayout(path_frame)
+        label = QLabel("Image Folder: ", path_frame)
+        self.folderInput = QLineEdit(path_frame)
+        self.folderInput.setMinimumWidth(200)
+        self.folderInput.setPlaceholderText("사진 경로를 입력하세요")
+        self.getFolder_but = QPushButton("...")
+        self.getFolder_but.setFixedWidth(30)
+        self.getFolder_but.clicked.connect(self.getPicPath)
+
+        path_layout.addWidget(label)
+        path_layout.addWidget(self.folderInput)
+        path_layout.addWidget(self.getFolder_but)
+        path_frame.setLayout(path_layout)
+
+        self.option_check = QCheckBox("점 번호와 같도록 자동으로 파일명을 입력합니다.",  self)
+        self.option_check.toggled.connect(self.onCheckToggled)       
+
+        self.ext_group = QGroupBox("확장자 선택")
+        self.ext_group.setEnabled(False)
+        ext_layout = QHBoxLayout(self.ext_group)
+        ext_list = ['jpg', 'jpeg', 'png', 'bmp']
+        self.radioButtons =[]
+        for ext in ext_list:
+            radioBut = QRadioButton(ext, self.ext_group)
+            radioBut.toggled.connect(self.onRadioToggled)
+            ext_layout.addWidget(radioBut)
+            self.radioButtons.append(radioBut)
+        
+        self.buttonBox = QDialogButtonBox()
+        self.buttonBox.setOrientation(Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        main_layout.addWidget(path_frame)
+        main_layout.addWidget(self.option_check)
+        main_layout.addWidget(self.ext_group)
+        main_layout.addWidget(self.buttonBox)
+
+        self.setLayout(main_layout)
+
+
+    def getPicPath(self):
+        image_path = QFileDialog.getExistingDirectory(self, "Image Path")
+        if image_path:
+            self.folderInput.setText(image_path)
+            self.imagePath = image_path
+
+    def onRadioToggled(self):
+        for btn in self.radioButtons:
+            if btn.isChecked():
+                self.imageExt = btn.text() 
+                break
+
+    def onCheckToggled(self):
+        self.option = False
+        self.option_check.setEnabled(False)
+        if self.option_check.isChecked():
+            self.ext_group.setEnabled(True)
+            self.option = True
 
 
 class MyApp(QMainWindow):
 
     HEADER_LABELS = ['점번호', 'X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', 
                           '토지소재(지번)', '지적도도호', '설치년월일', '조사년월일', '조사자(직)', 
-                          '조사자(성명)', '경위도(L)', '경위도(B)', '표고', '사진파일(경로)', '사진파일명']
+                          '조사자(성명)', '경위도(B)', '경위도(L)', '표고', '사진파일(경로)', '사진파일명']
+    TEMPLATE = 'template.xlsx'
 
     def __init__(self):
         super().__init__()
@@ -91,7 +190,8 @@ class MyApp(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle('MainWindow')
-        self.setGeometry(300, 300, 600, 400)
+        self.setGeometry(300,300, 300,300)
+        # self.showMaximized()
         self.rowCount = 5
 
         layout = QVBoxLayout()
@@ -101,6 +201,15 @@ class MyApp(QMainWindow):
 
         self.commonInput_but = QPushButton("공통값 입력", self)
         self.commonInput_but.clicked.connect(self.showCommonInputDialog)
+
+        self.pic_path_but = QPushButton("이미지 경로 입력", self)
+        self.pic_path_but.clicked.connect(self.showImagePathDialog)
+
+        self.jijuk_btn = QPushButton("토지소재지 입력(cif, shp)", self)
+        self.jijuk_btn.clicked.connect(self.setLocation)
+
+        self.report_btn = QPushButton("엑셀로 저장", self)
+        self.report_btn.clicked.connect(self.saveToExcel)
 
         self.tableWidget = QTableWidget(self)
         
@@ -123,6 +232,9 @@ class MyApp(QMainWindow):
 
         layout.addWidget(self.getDat_but)
         layout.addWidget(self.commonInput_but)
+        layout.addWidget(self.pic_path_but)
+        layout.addWidget(self.jijuk_btn)
+        layout.addWidget(self.report_btn)
         layout.addWidget(self.tableWidget)
 
         container = QWidget()
@@ -133,13 +245,41 @@ class MyApp(QMainWindow):
 
     def showCommonInputDialog(self):
         dialog = CommonInputDialog(self)
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.Accepted:
             commoninput = {k:v.text() for k, v in zip(dialog.texts, dialog.inputs)}
             
             for k, v in commoninput.items():
                 for row in range(self.rowCount):
                     self.setCellItemAligned(row, self._headerindex(k), v)
+    
+    def showImagePathDialog(self):
+        dialog = ImagePathDialog()
+        if dialog.exec() == QDialog.Accepted:
+            path = dialog.imagePath
+            ext = dialog.imageExt
+            option = dialog.option
+            for row in range(self.rowCount):
+                self.setCellItemAligned(row, self._headerindex("사진파일(경로)"), path)
+                if option:
+                    num = self.tableWidget.item(row, 0).text()
+                    self.setCellItemAligned(row, self._headerindex("사진파일명"), '.'.join([num, ext]))
+    #######################
 
+    def setLocation(self):
+        jijuk, _ = QFileDialog.getOpenFileName(self,"Get Jijuk DB", "", "Cif Files (*.cif);;Shp Files (*.shp);;All Files (*)")
+        if jijuk:
+            if jijuk.lower().endswith(".cif"):
+                ...
+
+            if jijuk.lower().endswith(".shp"):
+                ...
+
+    def saveToExcel(self):
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save Excel File", "", "Excel Files (*.xlsx)")
+        if fileName:
+            export_to_report(self.tableWidget, self.TEMPLATE, fileName )
+
+                              
 
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
@@ -238,4 +378,4 @@ class MyApp(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = MyApp()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
