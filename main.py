@@ -2,9 +2,9 @@ import os
 import sys
 
 import pandas as pd
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFontMetrics, QKeySequence
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFontMetrics, QKeySequence
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
                              QDialog, QDialogButtonBox, QFileDialog, QFrame,
                              QGroupBox, QHBoxLayout, QHeaderView, QLabel,
                              QLineEdit, QMainWindow, QPushButton, QRadioButton,
@@ -283,13 +283,13 @@ class MyApp(QMainWindow):
         fileName, _ = QFileDialog.getSaveFileName(self, "Save Excel File", "", "Excel Files (*.xlsx)")
         if fileName:
             table_df = self.tablewidget_to_dataframe(self.tableWidget)
-            table_df["사진파일명"] = "_abcd.jpg"
+            table_df["사진파일명"] = "_bird.jpg"
             table_df.fillna("", inplace=True)
             border_settings =[{"rng": "A3:AF24","edges": ["all"], "border_style": "hair", "reset": True },  
                             {"rng": "A3:AF24","edges": ["outer"], "border_style": "thin",  "reset": False },
-                            {"rng": "A3:A4","edges": ["inner"], "border_style": None,  "reset": False },
-                            {"rng": "A6:A7","edges": ["inner"], "border_style": None, "reset": False },  
-                            {"rng": "A17:AF17","edges": ["inner"], "border_style": None, "reset": False },
+                            {"rng": "A3:A4","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
+                            {"rng": "A6:A7","edges": ["inner_horizontal"], "border_style": None, "reset": False },  
+                            {"rng": "A17:AF17","edges": ["inner_vertical"], "border_style": None, "reset": False },
                             {"rng": "B8:AF9","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B10:AF11","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B12:AF13","edges": ["inner_horizontal"], "border_style": None, "reset": False },
@@ -311,7 +311,7 @@ class MyApp(QMainWindow):
                         {'fields': '조사자(직)', 'address': 'B21'},
                         {'fields': '조사자(성명)', 'address': 'E21'},
                         {'fields': '조사내용', 'address': 'J21'},
-                        {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF17", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
+                        {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF18", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
             ]  ## insert image
 
             repoter = ReportFromDataframe(template='template.xlsx', sheetname='서식', savefile=fileName, dataframe=table_df, max_row=25, border_settings=border_settings, mappings=mappings)

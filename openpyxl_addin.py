@@ -6,7 +6,9 @@ from openpyxl.utils.units import pixels_to_EMU, cm_to_EMU, EMU_to_pixels, EMU_to
 from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor, AnchorMarker, OneCellAnchor
 from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.utils.cell import get_column_letter, column_index_from_string, coordinate_from_string, range_boundaries
+from openpyxl.worksheet.dimensions import ColumnDimension, DimensionHolder
 from copy import copy
+from PIL import Image as PILImage
 import pandas as pd
 import ctypes
 import shutil
@@ -98,8 +100,8 @@ def set_font(rng: tuple, **kargs) -> None:
           name: str, 폰트명
           color: openpyxl.styles.colors.Color, 색상(ex. 'FF00DD')
           strike: bool, 취소선
-          u: one of {‘singleAccounting’, ‘doubleAccounting’, ‘double’, ‘single’}, 실선, 이중실선, 실선(회계용), 이중실선(회계용)
-          vertAlign: one of {‘baseline’, ‘subscript’, ‘superscript’}, 첨자
+          u: one of {'singleAccounting', 'doubleAccounting', 'double', 'single'}, 실선, 이중실선, 실선(회계용), 이중실선(회계용)
+          vertAlign: one of {'baseline', 'subscript', 'superscript'}, 첨자
     """
     for rows in rng:
         for cell in rows:
@@ -119,11 +121,11 @@ def set_alignment(rng: tuple, **kargs) -> None:
     """ 
     정렬 설정 
     param kargs
-          horizontal: one of {‘fill’, ‘general’, ‘justify’, ‘center’, ‘left’, ‘centerContinuous’, ‘distributed’, ‘right’}  
+          horizontal: one of {'fill', 'general', 'justify', 'center', 'left', 'centerContinuous', 'distributed', 'right'}  
           indent: float         
           shrink_to_fit: bool, 셀맞춤
           textRotation: integer (0<= value <=180)
-          vertical: one of {‘justify’, ‘center’, ‘distributed’, ‘top’, ‘bottom’}
+          vertical: one of {'justify', 'center', 'distributed', 'top', 'bottom'}
           wrapText: bool, 자동줄바꿈
     """
     for rows in rng:
@@ -406,6 +408,13 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
         return None
     """
 
+    # DimensionHolder로 열너비 재설정
+    column_width = [17.625, 8.625, 3.125, 3.125, 2.505, 2.505, 2.505, 2.875, 2.505, 1.625, 2.005, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755]
+    dim_holder = DimensionHolder(worksheet=sheet)
+    for i, w in enumerate(column_width):
+        dim_holder[get_column_letter(i+1)] = ColumnDimension(worksheet=sheet, min=i+1, max=i+1, width=w)
+    sheet.column_dimensions = dim_holder
+    
     # image_path to Image object
     image = Image(src)
 
@@ -415,7 +424,7 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
     if keep_ratio:  ## 이미지 비율 유지
         # cell width to accumulated list(unit: EMU)
         r_to_EMU = lambda x: pixels_to_EMU(_ch_px(x)) - 4 / (_get_windows_dpi() / 72)
-        widths = [r_to_EMU(sheet.column_dimensions[get_column_letter(column+1)].width) for column in range(c_left, c_right+1)]
+        widths = [r_to_EMU(sheet.column_dimensions[get_column_letter(column+1)].width) for column in range(c_left, c_right)]
         accum_width = [sum(widths[:i+1]) for i in range(len(widths))]
         cw = accum_width[-1]
 
@@ -437,13 +446,24 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
         roff = (ch-ih)/2 
         coff = (cw-iw)/2 
 
+        print(roff, coff)
+        print(accum_width)
         # find anchor bias and recalculate offset
         for i, val in enumerate(accum_width):
             c_bias = i
+            
             if val > coff:
-                if i > 0:
-                    coff -= accum_width[i-1] 
+                if len(accum_width) == 1:
+                    break
+
+                if coff > val/2:
+                    c_bias += 1
+                    coff= coff-val
+                else:
+                    coff -= accum_width[i-1]
                 break
+
+        print(coff)
         
         for i, val in enumerate(accum_height):
             r_bias = i
@@ -477,6 +497,7 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
 
     # Add the image to the worksheet
     sheet.add_image(image)
+
 
 def set_data(sheet: openpyxl.worksheet.worksheet.Worksheet, rng:str, data: any) -> None:
     sheet[rng] = data
