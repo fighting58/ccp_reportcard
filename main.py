@@ -1,15 +1,20 @@
-import sys
 import os
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFontMetrics, QKeySequence
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLabel, QLineEdit,
-                             QMainWindow, QStyledItemDelegate, QTableWidget, QTableWidgetItem,
-                             QVBoxLayout, QHBoxLayout, QWidget, QDialog, QFileDialog, QPushButton,
-                             QDialogButtonBox, QFrame, QCheckBox, QRadioButton, QGroupBox)
+import sys
 
-from report2xlsx import export_to_report
+import pandas as pd
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFontMetrics, QKeySequence
+from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
+                             QDialog, QDialogButtonBox, QFileDialog, QFrame,
+                             QGroupBox, QHBoxLayout, QHeaderView, QLabel,
+                             QLineEdit, QMainWindow, QPushButton, QRadioButton,
+                             QStyledItemDelegate, QTableWidget,
+                             QTableWidgetItem, QVBoxLayout, QWidget)
 
 from searchFromDB import NotDecodingError, find_features_containing_point
+from shp2report import ReportFromDataframe
+from shp2report_callbacks import insert_image, str_add
+
 
 class AutoResizeDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
@@ -48,7 +53,7 @@ class CommonInputDialog(QDialog):
 
         layout = QVBoxLayout(self)
         self.setWindowTitle("공통값 입력")
-        self.texts = ["도선등급", "도선명", "설치년월일", "조사년월일", "조사자(직)", "조사자(성명)"]
+        self.texts = ["도선등급", "도선명", "설치년월일", "조사년월일", "조사자(직)", "조사자(성명)", "조사내용"]
         self.labels = []
         self.inputs = []
         self.setFixedSize(210, 220)
@@ -180,8 +185,8 @@ class ImagePathDialog(QDialog):
 class MyApp(QMainWindow):
 
     HEADER_LABELS = ['점번호', 'X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', 
-                          '토지소재(지번)', '지적도도호', '설치년월일', '조사년월일', '조사자(직)', 
-                          '조사자(성명)', '경위도(B)', '경위도(L)', '표고', '사진파일(경로)', '사진파일명']
+                          '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', 
+                          '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '표고', '사진파일(경로)', '사진파일명']
     TEMPLATE = 'template.xlsx'
 
     def __init__(self):
@@ -277,9 +282,56 @@ class MyApp(QMainWindow):
     def saveToExcel(self):
         fileName, _ = QFileDialog.getSaveFileName(self, "Save Excel File", "", "Excel Files (*.xlsx)")
         if fileName:
-            export_to_report(self.tableWidget, self.TEMPLATE, fileName )
+            table_df = self.tablewidget_to_dataframe(self.tableWidget)
+            table_df["사진파일명"] = "_abcd.jpg"
+            table_df.fillna("", inplace=True)
+            border_settings =[{"rng": "A3:AF24","edges": ["all"], "border_style": "hair", "reset": True },  
+                            {"rng": "A3:AF24","edges": ["outer"], "border_style": "thin",  "reset": False },
+                            {"rng": "A3:A4","edges": ["inner"], "border_style": None,  "reset": False },
+                            {"rng": "A6:A7","edges": ["inner"], "border_style": None, "reset": False },  
+                            {"rng": "A17:AF17","edges": ["inner"], "border_style": None, "reset": False },
+                            {"rng": "B8:AF9","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "B10:AF11","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "B12:AF13","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "L3:M4","edges": ["right"], "border_style": None, "reset": False }
+            ]
+            mappings = [ {'fields': '점번호', 'address': 'B3'},
+                        {'fields': '도선등급', 'address': 'G3'},
+                        {'fields': '도선명', 'address': 'L3'},
+                        {'fields': '표지재질', 'address': 'Z3'},
+                        {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' '}},  
+                        {'fields': '지적(임야)도', 'address': 'Z5'},
+                        {'fields': '설치년월일', 'address': 'A8'},
+                        {'fields': 'X', 'address': 'B9'},
+                        {'fields': 'Y', 'address': 'E9'},
+                        {'fields': '경위도(B)', 'address': 'K9'},
+                        {'fields': '경위도(L)', 'address': 'V9'},
+                        {'fields': '표고', 'address': 'L15'},
+                        {'fields': '조사년월일', 'address': 'A21'},
+                        {'fields': '조사자(직)', 'address': 'B21'},
+                        {'fields': '조사자(성명)', 'address': 'E21'},
+                        {'fields': '조사내용', 'address': 'J21'},
+                        {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF17", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
+            ]  ## insert image
 
-                              
+            repoter = ReportFromDataframe(template='template.xlsx', sheetname='서식', savefile=fileName, dataframe=table_df, max_row=25, border_settings=border_settings, mappings=mappings)
+            repoter.report()
+            print("report exported")
+
+
+    def tablewidget_to_dataframe(self, table_widget: QTableWidget) -> pd.DataFrame:
+        rows = table_widget.rowCount()
+        columns = table_widget.columnCount()
+        
+        data = {}
+        for column in range(columns):
+            header = table_widget.horizontalHeaderItem(column).text()
+            data[header] = []
+            for row in range(rows):
+                item = table_widget.item(row, column)
+                data[header].append(item.text() if item else None)
+        
+        return pd.DataFrame(data)           
 
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
