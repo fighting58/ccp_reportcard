@@ -2,9 +2,9 @@ import os
 import sys
 
 import pandas as pd
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFontMetrics, QKeySequence
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFontMetrics, QKeySequence
+from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
                              QDialog, QDialogButtonBox, QFileDialog, QFrame,
                              QGroupBox, QHBoxLayout, QHeaderView, QLabel,
                              QLineEdit, QMainWindow, QPushButton, QRadioButton,
@@ -283,7 +283,8 @@ class MyApp(QMainWindow):
         fileName, _ = QFileDialog.getSaveFileName(self, "Save Excel File", "", "Excel Files (*.xlsx)")
         if fileName:
             table_df = self.tablewidget_to_dataframe(self.tableWidget)
-            table_df["사진파일명"] = "_bird.jpg"
+            table_df["사진파일(경로))"] = "."
+            table_df["사진파일명"] = "_abcd.jpg"
             table_df.fillna("", inplace=True)
             border_settings =[{"rng": "A3:AF24","edges": ["all"], "border_style": "hair", "reset": True },  
                             {"rng": "A3:AF24","edges": ["outer"], "border_style": "thin",  "reset": False },

@@ -446,8 +446,8 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
         roff = (ch-ih)/2 
         coff = (cw-iw)/2 
 
-        print(roff, coff)
-        print(accum_width)
+        print("====", coff)
+
         # find anchor bias and recalculate offset
         for i, val in enumerate(accum_width):
             c_bias = i
@@ -456,14 +456,20 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
                 if len(accum_width) == 1:
                     break
 
-                if coff > val/2:
-                    c_bias += 1
-                    coff= coff-val
+                if i==0:
+                    print("----", coff, val/2, c_bias)
+                    if coff > val/2:                        
+                        c_bias += 1
+                        coff -= val
+                    
                 else:
-                    coff -= accum_width[i-1]
+                    if coff > (val + accum_width[i-1])/2:
+                        c_bias += 1
+                        coff -= val
+                    else:
+                        coff -= accum_width[i-1]
+                print(val, coff, c_bias)
                 break
-
-        print(coff)
         
         for i, val in enumerate(accum_height):
             r_bias = i
