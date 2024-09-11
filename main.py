@@ -2,9 +2,9 @@ import os
 import sys
 
 import pandas as pd
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFontMetrics, QKeySequence
-from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
+from PySide6.QtCore import Qt, QRect
+from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
                              QDialog, QDialogButtonBox, QFileDialog, QFrame,
                              QGroupBox, QHBoxLayout, QHeaderView, QLabel,
                              QLineEdit, QMainWindow, QPushButton, QRadioButton,
@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
 
 from searchFromDB import NotDecodingError, find_features_containing_point
 from shp2report import ReportFromDataframe
-from shp2report_callbacks import insert_image, str_add
+from shp2report_callbacks import insert_image, str_add, hangul_date
 import pickle
 
 
@@ -183,6 +183,81 @@ class ImagePathDialog(QDialog):
             self.option = True
 
 
+class CustomTableWidget(QTableWidget):
+    def __init__(self, parent=None):
+        super().__init__()
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setMouseTracking(True)
+        self.start_item = None
+        self.end_item = None
+        self.dragging = False
+        self.fill_handle_size = 6
+        self.drag_rect = None
+
+    def mousePressEvent(self, event):
+        item = self.itemAt(event.position().toPoint())
+        if item and self.is_on_fill_handle(event.position().toPoint(), item):
+            self.start_item = item
+            self.dragging = True
+        else:
+            super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.dragging:
+            self.end_item = self.itemAt(event.position().toPoint())
+            if self.end_item:
+                self.update_drag_rect()
+            self.viewport().update()
+        else:
+            super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.dragging:
+            self.dragging = False
+            if self.start_item and self.end_item:
+                self.fill_items()
+            self.drag_rect = None
+            self.viewport().update()
+        else:
+            super().mouseReleaseEvent(event)
+
+    def fill_items(self):
+        start_row = self.start_item.row()
+        start_col = self.start_item.column()
+        end_row = self.end_item.row()
+        end_col = self.end_item.column()
+        value = self.start_item.text()
+
+        row_step = 1 if start_row < end_row else -1
+        col_step = 1 if start_col < end_col else -1        
+
+        for row in range(start_row, end_row + 1 * row_step, row_step):
+            for col in range(start_col, end_col + 1 * col_step, col_step):
+                item = QTableWidgetItem(value)
+                item.setTextAlignment(Qt.AlignCenter)
+                self.setItem(row, col, item)
+
+    def is_on_fill_handle(self, pos, item):
+        rect = self.visualItemRect(item)
+        handle_rect = QRect(rect.right() - self.fill_handle_size, rect.bottom() - self.fill_handle_size, self.fill_handle_size, self.fill_handle_size)
+        return handle_rect.contains(pos)
+
+    def update_drag_rect(self):
+        start_rect = self.visualItemRect(self.start_item)
+        end_rect = self.visualItemRect(self.end_item)
+        self.drag_rect = start_rect.united(end_rect)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self.viewport())
+        for item in self.selectedItems():
+            rect = self.visualItemRect(item)
+            handle_rect = QRect(rect.right() - self.fill_handle_size, rect.bottom() - self.fill_handle_size, self.fill_handle_size, self.fill_handle_size)
+            painter.fillRect(handle_rect, QColor(0, 0, 0))
+        if self.drag_rect:
+            painter.setPen(QColor(0, 0, 255))
+            painter.drawRect(self.drag_rect)
+
 class MyApp(QMainWindow):
 
     HEADER_LABELS = ['점번호', 'X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', 
@@ -223,7 +298,7 @@ class MyApp(QMainWindow):
         self.saveProject_but = QPushButton("프로젝트 저장", self)
         self.saveProject_but.clicked.connect(self.saveProject)
 
-        self.tableWidget = QTableWidget(self)
+        self.tableWidget = CustomTableWidget(self)
         
         self.tableWidget.setColumnCount(len(self.HEADER_LABELS))
         self.tableWidget.setRowCount(self.rowCount)
@@ -292,8 +367,6 @@ class MyApp(QMainWindow):
         fileName, _ = QFileDialog.getSaveFileName(self, "Save Excel File", "", "Excel Files (*.xlsx)")
         if fileName:
             table_df = self.tablewidget_to_dataframe(self.tableWidget)
-            table_df["사진파일(경로))"] = "."
-            table_df["사진파일명"] = "_abcd.jpg"
             table_df.fillna("", inplace=True)
             border_settings =[{"rng": "A3:AF24","edges": ["all"], "border_style": "hair", "reset": True },  
                             {"rng": "A3:AF24","edges": ["outer"], "border_style": "thin",  "reset": False },
@@ -311,13 +384,13 @@ class MyApp(QMainWindow):
                         {'fields': '표지재질', 'address': 'Z3'},
                         {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' '}},  
                         {'fields': '지적(임야)도', 'address': 'Z5'},
-                        {'fields': '설치년월일', 'address': 'A8'},
+                        {'fields': '설치년월일', 'address': 'A8', 'callback': hangul_date},
                         {'fields': 'X', 'address': 'B9'},
                         {'fields': 'Y', 'address': 'E9'},
                         {'fields': '경위도(B)', 'address': 'K9'},
                         {'fields': '경위도(L)', 'address': 'V9'},
                         {'fields': '표고', 'address': 'L15'},
-                        {'fields': '조사년월일', 'address': 'A21'},
+                        {'fields': '조사년월일', 'address': 'A21', 'callback': hangul_date},
                         {'fields': '조사자(직)', 'address': 'B21'},
                         {'fields': '조사자(성명)', 'address': 'E21'},
                         {'fields': '조사내용', 'address': 'J21'},
@@ -401,7 +474,6 @@ class MyApp(QMainWindow):
                         item = QTableWidgetItem(row_data[header] if row_data[header] is not None else "")
                         table_widget.setItem(row_index, column_index, item)
                         item.setTextAlignment(Qt.AlignCenter)
-
             
             print(f"파일이 성공적으로 로드되었습니다: {file_path}")
 
@@ -443,16 +515,28 @@ class MyApp(QMainWindow):
 
     def loadDataToTable(self, fileName):
         with open(fileName, 'r') as file:
-            lines = file.readlines()
+            lines = file.readlines()            
         self.rowCount = len(lines)
         self.tableWidget.setRowCount(self.rowCount)
         
         for row, line in enumerate(lines):
+            # line에 있는 중복된 공백을 공백하나로 합치고 tab으로 변경
+            while True:
+                if "  " in line:
+                    line.replace("  ",' ')
+                else:
+                    break
+            line.replace(' ', '\t')
+
             data = line.strip().split('\t')
             if len(data) >= 3:
                 self.setCellItemAligned(row, 0, data[0])  # 점번호
                 self.setCellItemAligned(row, 1, f"{float(data[1])/100:.2f}")  # X
                 self.setCellItemAligned(row, 2, f"{float(data[2])/100:.2f}")  # Y
+                # 나머지는 빈 문자
+                for i in range(3, self.tableWidget.columnCount()+1):
+                    self.setCellItemAligned(row, i, '')
+
 
     def keyPressEvent(self, event):
         if event.matches(QKeySequence.Copy):

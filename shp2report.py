@@ -1,7 +1,7 @@
 import openpyxl_addin as oa
 import openpyxl
 import pandas as pd
-from shp2report_callbacks import str_add, str_deco, insert_image
+
 
 
 class ReportFromDataframe():
@@ -79,8 +79,11 @@ class ReportFromDataframe():
                 else:
                     # 특정 함수를 통과 후 기록(필드값 합치기, 이미지 입력.. )
                     # shp2report_callbacs.py에 정의
-                    callback(rng=rng, index=i, sheet=sheet, dataframe=self.dataframe, fields=fields, **kargs)
-                rng =  oa.cell_shift(rng, row_shift=self.max_row)
+                    if kargs is None:
+                        callback(sheet=sheet, rng=rng, index=i, dataframe=self.dataframe, fields=fields)
+                    else:
+                        callback(sheet=sheet, rng=rng, index=i, dataframe=self.dataframe, fields=fields, **kargs)
+                rng = oa.cell_shift(rng, row_shift=self.max_row)
 
     def report(self) -> None:
         """
@@ -102,6 +105,8 @@ class ReportFromDataframe():
 
 
 if __name__ == "__main__":
+
+    from shp2report_callbacks import str_add, str_deco, insert_image
 
     border_setting =[{"rng": "A3:D4","edges": ["all"], "border_style": "thin", "reset": True },  # 전체 가는 실선
                     {"rng": "A3:A5","edges": ["all"], "border_style": "thin",  "reset": False },

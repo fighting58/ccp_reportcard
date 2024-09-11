@@ -43,3 +43,19 @@ def insert_image(**kargs):
 
     oa.insert_image(sheet=kargs.get('sheet'), rng=kargs.get('rng'), src=image_src, margin_px=margin_px, keep_ratio=keep_ratio)
 
+def hangul_date(**kargs):    
+    df = kargs.get('dataframe')
+    fields= kargs.get('fields')
+    idx = kargs.get('index')
+    datum = df.loc[idx, fields]
+
+    data = datum.replace(' ', '')
+    if '.' in data:    
+        data = data.replace('.', '-') + '-'
+        
+    if '-' in data:
+        year, month, day = data.split('-')[:3]
+        data = ''.join([year,'년', f'{month:0>2}','월',f'{day:0>2}','일'])
+    data = data.replace('년', '년 ').replace('월', '월 ')
+    oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=data)
+
