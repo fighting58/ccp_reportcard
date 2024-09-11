@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
 from searchFromDB import NotDecodingError, find_features_containing_point
 from shp2report import ReportFromDataframe
 from shp2report_callbacks import insert_image, str_add
+import pickle
 
 
 class AutoResizeDelegate(QStyledItemDelegate):
@@ -204,6 +205,9 @@ class MyApp(QMainWindow):
         self.getDat_but = QPushButton("tr.dat", self)
         self.getDat_but.clicked.connect(self.getDatFile)
 
+        self.loadProject_but = QPushButton("프로젝트 파일", self)
+        self.loadProject_but.clicked.connect(self.loadProject)
+
         self.commonInput_but = QPushButton("공통값 입력", self)
         self.commonInput_but.clicked.connect(self.showCommonInputDialog)
 
@@ -215,6 +219,9 @@ class MyApp(QMainWindow):
 
         self.report_btn = QPushButton("엑셀로 저장", self)
         self.report_btn.clicked.connect(self.saveToExcel)
+
+        self.saveProject_but = QPushButton("프로젝트 저장", self)
+        self.saveProject_but.clicked.connect(self.saveProject)
 
         self.tableWidget = QTableWidget(self)
         
@@ -236,10 +243,12 @@ class MyApp(QMainWindow):
         self.alignAllCellsCenter()
 
         layout.addWidget(self.getDat_but)
+        layout.addWidget(self.loadProject_but)
         layout.addWidget(self.commonInput_but)
         layout.addWidget(self.pic_path_but)
         layout.addWidget(self.jijuk_btn)
         layout.addWidget(self.report_btn)
+        layout.addWidget(self.saveProject_but)
         layout.addWidget(self.tableWidget)
 
         container = QWidget()
@@ -332,7 +341,84 @@ class MyApp(QMainWindow):
                 item = table_widget.item(row, column)
                 data[header].append(item.text() if item else None)
         
-        return pd.DataFrame(data)           
+        return pd.DataFrame(data)   
+
+    def save_table_to_pickle(self, table_widget: QTableWidget, file_path: str):
+        try:
+            data = []
+            row_count = table_widget.rowCount()
+            column_count = table_widget.columnCount()
+
+            # 헤더 가져오기
+            headers = []
+            for column in range(column_count):
+                headers.append(table_widget.horizontalHeaderItem(column).text())
+
+            # 데이터 가져오기
+            for row in range(row_count):
+                row_data = {}
+                for column in range(column_count):
+                    item = table_widget.item(row, column)
+                    if item is not None:
+                        row_data[headers[column]] = item.text()
+                    else:
+                        row_data[headers[column]] = None  # 빈 셀은 None으로 설정
+                data.append(row_data)
+
+            # pickle 파일로 저장
+            with open(file_path, mode='wb') as file:
+                pickle.dump(data, file)
+
+            print(f"파일이 성공적으로 저장되었습니다: {file_path}")
+        except Exception as e:
+            print(f"파일 저장 중 오류 발생: {e}")  
+
+    def load_table_from_pickle(self, table_widget: QTableWidget, file_path: str):
+        try:
+            # pickle 파일에서 데이터 로드
+            with open(file_path, mode='rb') as file:
+                data = pickle.load(file)
+
+            # QTableWidget 초기화
+            table_widget.setRowCount(0)  # 기존 데이터 초기화
+            table_widget.setColumnCount(0)
+
+            # 데이터가 비어있지 않은 경우
+            if data:
+                # 열 수 설정
+                column_count = len(data[0])
+                table_widget.setColumnCount(column_count)
+
+                # 헤더 설정
+                headers = list(data[0].keys())
+                table_widget.setHorizontalHeaderLabels(headers)
+
+                # 데이터 추가
+                for row_data in data:
+                    row_index = table_widget.rowCount()
+                    table_widget.insertRow(row_index)
+                    for column_index, header in enumerate(headers):
+                        item = QTableWidgetItem(row_data[header] if row_data[header] is not None else "")
+                        table_widget.setItem(row_index, column_index, item)
+                        item.setTextAlignment(Qt.AlignCenter)
+
+            
+            print(f"파일이 성공적으로 로드되었습니다: {file_path}")
+
+        except Exception as e:
+            print(f"파일 로드 중 오류 발생: {e}")    
+
+    def loadProject(self):
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getOpenFileName(self, "Load project", "", "Pickle Files (*.pickle)", options=options)
+        if fileName:
+            self.load_table_from_pickle(self.tableWidget, fileName)
+
+    def saveProject(self):
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save project", "", "Pickle Files (*.pickle)", options=options)
+        if fileName:
+            self.save_table_to_pickle(self.tableWidget, fileName)
 
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
