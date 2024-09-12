@@ -4,9 +4,19 @@ import os
 import geopandas as gpd
 import tempfile
 
+class NotDecodingError(Exception): ...
+
 class CifGeoDataFrame:
     def __init__(self, cif:str):
         self.cif = cif
+
+    def is_binary(self):
+        with open(self.cif, 'r') as f:
+            try:
+                line = f.readline()
+                return False
+            except UnicodeDecodeError:
+                return True
 
     def returnSpaceifNull(self, s):
         return s if len(s) > 0 else ' '
@@ -47,6 +57,8 @@ class CifGeoDataFrame:
 
     def convert_to_geodataframe(self):
         cif_basename = os.path.basename(self.cif)
+        if self.is_binary():
+            return
 
         with tempfile.TemporaryDirectory() as temp_dir:
             shp = cif_basename.lower().replace('.cif', "_temp.shp")
@@ -86,7 +98,7 @@ class CifGeoDataFrame:
 
                 try:
                     with open(self.cif, "r") as f:
-                        while 1:
+                        while True:
                             data = f.readline().strip()
                             if data == u'<필지S>':
                                 data = f.readline().strip()
@@ -163,10 +175,12 @@ class CifGeoDataFrame:
                             if data == u'<연속필지S>' or data == 'EOF':
                                 break
                 except Exception as e:
-                    print(e)
-            
+                    print(e)            
             gdf = gpd.read_file(shp)
         return gdf
     
-    def __call__(self):
-        return self.convert_to_geodataframe()
+
+if __name__ == "__main__":
+    cif = "4146110700000_마평동414-3_복호.Cif"
+    cif_df = CifGeoDataFrame(cif).convert_to_geodataframe()
+    print(cif_df)

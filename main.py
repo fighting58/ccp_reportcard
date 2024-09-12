@@ -1,5 +1,6 @@
 import os
 import sys
+import geopandas as gpd
 import pandas as pd
 from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor
@@ -10,9 +11,10 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
                              QStyledItemDelegate, QTableWidget,
                              QTableWidgetItem, QVBoxLayout, QWidget)
 
-from searchFromDB import NotDecodingError, find_features_containing_point
+from geometric_search import find_id_within_linearbuffer, find_pnu_containing_point
 from shp2report import ReportFromDataframe
 from shp2report_callbacks import insert_image, str_add, hangul_date, toBL
+from cif_converter import CifGeoDataFrame
 import pickle
 
 
@@ -232,9 +234,13 @@ class CustomTableWidget(QTableWidget):
 
         for row in range(start_row, end_row + 1 * row_step, row_step):
             for col in range(start_col, end_col + 1 * col_step, col_step):
-                item = QTableWidgetItem(value)
-                item.setTextAlignment(Qt.AlignCenter)
-                self.setItem(row, col, item)
+                if row != start_row or col != start_col:
+                    item = self.item(row, col)
+                    if not item:
+                        item = QTableWidgetItem()
+                        item.setTextAlignment(Qt.AlignCenter)
+                        self.setItem(row, col, item)
+                    item.setText(value)
 
     def is_on_fill_handle(self, pos, item):
         rect = self.visualItemRect(item)
@@ -332,9 +338,10 @@ class MyApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.resize(800, 600)
 
     def initUI(self):
-        self.setWindowTitle('MainWindow')
+        self.setWindowTitle('지적삼각(도근)점성과표 관리')
         self.setGeometry(300,300, 300,300)
         # self.showMaximized()
         self.rowCount = 5
@@ -416,16 +423,23 @@ class MyApp(QMainWindow):
                 if option:
                     num = self.tableWidget.item(row, 0).text()
                     self.setCellItemAligned(row, self._headerindex("사진파일명"), '.'.join([num, ext]))
-    #######################
 
     def setLocation(self):
         jijuk, _ = QFileDialog.getOpenFileName(self,"Get Jijuk DB", "", "Cif Files (*.cif);;Shp Files (*.shp);;All Files (*)")
         if jijuk:
             if jijuk.lower().endswith(".cif"):
-                ...
-
+                gdf = CifGeoDataFrame(jijuk).convert_to_geodataframe()
             if jijuk.lower().endswith(".shp"):
-                ...
+                gdf = gpd.read_file(jijuk, encoding="euc-kr")
+            
+            if gdf is None: 
+                return
+            
+            print((float(self.tableWidget.item(1,1).text()), float(self.tableWidget.item(1,2).text())))
+            location = find_pnu_containing_point(gdf, (float(self.tableWidget.item(1,1).text()), float(self.tableWidget.item(1,2).text())))
+            print(location)
+
+
 
     def saveToExcel(self):
         fileName, _ = QFileDialog.getSaveFileName(self, "Save Excel File", "", "Excel Files (*.xlsx)")
@@ -478,7 +492,7 @@ class MyApp(QMainWindow):
             data[header] = []
             for row in range(rows):
                 item = table_widget.item(row, column)
-                data[header].append(item.text() if item else None)
+                data[header].append(item.text() if item else "")
         
         return pd.DataFrame(data)   
 
