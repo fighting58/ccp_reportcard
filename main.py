@@ -1,6 +1,5 @@
 import os
 import sys
-
 import pandas as pd
 from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor
@@ -13,7 +12,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
 
 from searchFromDB import NotDecodingError, find_features_containing_point
 from shp2report import ReportFromDataframe
-from shp2report_callbacks import insert_image, str_add, hangul_date
+from shp2report_callbacks import insert_image, str_add, hangul_date, toBL
 import pickle
 
 
@@ -258,6 +257,71 @@ class CustomTableWidget(QTableWidget):
             painter.setPen(QColor(0, 0, 255))
             painter.drawRect(self.drag_rect)
 
+    def keyPressEvent(self, event):
+        if event.matches(QKeySequence.Copy):
+            self.copySelection()
+        elif event.matches(QKeySequence.Paste):
+            self.pasteSelection()
+        elif event.key() == Qt.Key_Delete:
+            self.deleteSelection()
+        elif event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+            self.moveToNextCell()        
+        else:
+            super().keyPressEvent(event)
+
+    def copySelection(self):
+        selection = self.selectedRanges()
+        if selection:
+            rows = sorted(range(selection[0].topRow(), selection[0].bottomRow() + 1))
+            columns = sorted(range(selection[0].leftColumn(), selection[0].rightColumn() + 1))
+            rowcount = len(rows)
+            colcount = len(columns)
+            table = [[''] * colcount for _ in range(rowcount)]
+            for i, row in enumerate(rows):
+                for j, col in enumerate(columns):
+                    item = self.item(row, col)
+                    table[i][j] = item.text() if item else ''
+            stream = '\n'.join(['\t'.join(row) for row in table])
+            QApplication.clipboard().setText(stream)
+
+    def pasteSelection(self):
+        clipboard = QApplication.clipboard()
+        if clipboard.mimeData().hasText():
+            text = clipboard.text()
+            rows = text.split('\n')
+            selected = self.selectedRanges()
+            if selected:
+                start_row = selected[0].topRow()
+                start_col = selected[0].leftColumn()
+                for i, row in enumerate(rows):
+                    columns = row.split('\t')
+                    for j, column in enumerate(columns):
+                        if start_row + i < self.rowCount() and start_col + j < self.columnCount():
+                            self.setCellItemAligned(start_row + i, start_col + j, column)
+
+    def setCellItemAligned(self, row, column, value, align=Qt.AlignCenter):
+        item = QTableWidgetItem(str(value))
+        item.setTextAlignment(align)
+        self.setItem(row, column, item)
+                
+    def deleteSelection(self):
+        for item in self.selectedItems():
+            item.setText("")
+
+    def moveToNextCell(self):
+        current = self.currentItem()
+        if current:
+            row = current.row()
+            col = current.column()
+            if col + 1 < self.columnCount():
+                next_item = self.item(row, col + 1)
+            else:
+                next_item = self.item(row + 1, 0)
+            if next_item:
+                self.setCurrentItem(next_item)
+                self.editItem(next_item)
+
+
 class MyApp(QMainWindow):
 
     HEADER_LABELS = ['점번호', 'X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', 
@@ -371,8 +435,10 @@ class MyApp(QMainWindow):
             border_settings =[{"rng": "A3:AF24","edges": ["all"], "border_style": "hair", "reset": True },  
                             {"rng": "A3:AF24","edges": ["outer"], "border_style": "thin",  "reset": False },
                             {"rng": "A3:A4","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
-                            {"rng": "A6:A7","edges": ["inner_horizontal"], "border_style": None, "reset": False },  
-                            {"rng": "A17:AF17","edges": ["inner_vertical"], "border_style": None, "reset": False },
+                            {"rng": "A6:A7","edges": ["inner_horizontal"], "border_style": None, "reset": False }, 
+                            {"rng": "A16:AF16","edges": ["inner_vertical"], "border_style": None, "reset": False }, 
+                            {"rng": "A17:AF18","edges": ["inner_vertical"], "border_style": None, "reset": False },
+                            {"rng": "A17:AF18","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B8:AF9","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B10:AF11","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B12:AF13","edges": ["inner_horizontal"], "border_style": None, "reset": False },
@@ -387,8 +453,8 @@ class MyApp(QMainWindow):
                         {'fields': '설치년월일', 'address': 'A8', 'callback': hangul_date},
                         {'fields': 'X', 'address': 'B9'},
                         {'fields': 'Y', 'address': 'E9'},
-                        {'fields': '경위도(B)', 'address': 'K9'},
-                        {'fields': '경위도(L)', 'address': 'V9'},
+                        {'fields': '경위도(B)', 'address': 'K9', 'callback':toBL},
+                        {'fields': '경위도(L)', 'address': 'V9', 'callback':toBL},
                         {'fields': '표고', 'address': 'L15'},
                         {'fields': '조사년월일', 'address': 'A21', 'callback': hangul_date},
                         {'fields': '조사자(직)', 'address': 'B21'},
@@ -495,11 +561,6 @@ class MyApp(QMainWindow):
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
 
-    def setCellItemAligned(self, row, column, value, align=Qt.AlignCenter):
-        item = QTableWidgetItem(str(value))
-        item.setTextAlignment(align)
-        self.tableWidget.setItem(row, column, item)
-
     def alignAllCellsCenter(self):
         for row in range(self.tableWidget.rowCount()):
             for col in range(self.tableWidget.columnCount()):
@@ -537,65 +598,6 @@ class MyApp(QMainWindow):
                 for i in range(3, self.tableWidget.columnCount()+1):
                     self.setCellItemAligned(row, i, '')
 
-
-    def keyPressEvent(self, event):
-        if event.matches(QKeySequence.Copy):
-            self.copySelection()
-        elif event.matches(QKeySequence.Paste):
-            self.pasteSelection()
-        elif event.key() == Qt.Key_Delete:
-            self.deleteSelection()
-        elif event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
-            self.moveToNextCell()        
-        else:
-            super().keyPressEvent(event)
-
-    def copySelection(self):
-        selection = self.tableWidget.selectedRanges()
-        if selection:
-            rows = sorted(range(selection[0].topRow(), selection[0].bottomRow() + 1))
-            columns = sorted(range(selection[0].leftColumn(), selection[0].rightColumn() + 1))
-            rowcount = len(rows)
-            colcount = len(columns)
-            table = [[''] * colcount for _ in range(rowcount)]
-            for i, row in enumerate(rows):
-                for j, col in enumerate(columns):
-                    item = self.tableWidget.item(row, col)
-                    table[i][j] = item.text() if item else ''
-            stream = '\n'.join(['\t'.join(row) for row in table])
-            QApplication.clipboard().setText(stream)
-
-    def pasteSelection(self):
-        clipboard = QApplication.clipboard()
-        if clipboard.mimeData().hasText():
-            text = clipboard.text()
-            rows = text.split('\n')
-            selected = self.tableWidget.selectedRanges()
-            if selected:
-                start_row = selected[0].topRow()
-                start_col = selected[0].leftColumn()
-                for i, row in enumerate(rows):
-                    columns = row.split('\t')
-                    for j, column in enumerate(columns):
-                        if start_row + i < self.tableWidget.rowCount() and start_col + j < self.tableWidget.columnCount():
-                            self.setCellItemAligned(start_row + i, start_col + j, column)
-                
-    def deleteSelection(self):
-        for item in self.tableWidget.selectedItems():
-            item.setText("")
-
-    def moveToNextCell(self):
-        current = self.tableWidget.currentItem()
-        if current:
-            row = current.row()
-            col = current.column()
-            if col + 1 < self.tableWidget.columnCount():
-                next_item = self.tableWidget.item(row, col + 1)
-            else:
-                next_item = self.tableWidget.item(row + 1, 0)
-            if next_item:
-                self.tableWidget.setCurrentItem(next_item)
-                self.tableWidget.editItem(next_item)
 
 
 if __name__ == '__main__':

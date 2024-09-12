@@ -59,3 +59,31 @@ def hangul_date(**kargs):
     data = data.replace('년', '년 ').replace('월', '월 ')
     oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=data)
 
+def toBL(**kargs):    
+    df = kargs.get('dataframe')
+    fields= kargs.get('fields')
+    idx = kargs.get('index')
+    datum = df.loc[idx, fields]
+
+    if datum:
+        datum = str(datum) 
+        try: 
+            temp = float(datum)
+            datum = f'{datum.ljust(12, "0")}'
+            idx = datum.index('.')
+            d = datum[:idx]
+            m = datum[idx+1:idx+3]
+            s = datum[idx+3:idx+5]
+            us = datum[idx+5:][:4]
+            s = ".".join([s, us])
+        except:
+            datum= datum.replace(" ", "")
+            for c in "˚´˝":
+                datum.replace(c, "-")
+            d, m, s = datum.split("-")
+            s= f'{s[:7].ljust(7, "0")}'
+
+        d=f'{d.rjust(3)}'
+        data = "   ".join([d, m , s])
+        oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=data)
+
