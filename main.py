@@ -11,11 +11,12 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
                              QStyledItemDelegate, QTableWidget,
                              QTableWidgetItem, QVBoxLayout, QWidget)
 
-from geometric_search import find_id_within_linearbuffer, find_pnu_containing_point
+from geometric_search import find_id_within_linearbuffer, find_attributes_containing_point
 from shp2report import ReportFromDataframe
-from shp2report_callbacks import insert_image, str_add, hangul_date, toBL
+from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL
 from cif_converter import CifGeoDataFrame
 import pickle
+from CodeDownload_codegokr import CodeGoKr
 
 
 class AutoResizeDelegate(QStyledItemDelegate):
@@ -410,7 +411,7 @@ class MyApp(QMainWindow):
             
             for k, v in commoninput.items():
                 for row in range(self.rowCount):
-                    self.setCellItemAligned(row, self._headerindex(k), v)
+                    self.tableWidget.setCellItemAligned(row, self._headerindex(k), v)
     
     def showImagePathDialog(self):
         dialog = ImagePathDialog()
@@ -419,10 +420,10 @@ class MyApp(QMainWindow):
             ext = dialog.imageExt
             option = dialog.option
             for row in range(self.rowCount):
-                self.setCellItemAligned(row, self._headerindex("사진파일(경로)"), path)
+                self.tableWidget.setCellItemAligned(row, self._headerindex("사진파일(경로)"), path)
                 if option:
                     num = self.tableWidget.item(row, 0).text()
-                    self.setCellItemAligned(row, self._headerindex("사진파일명"), '.'.join([num, ext]))
+                    self.tableWidget.setCellItemAligned(row, self._headerindex("사진파일명"), '.'.join([num, ext]))
 
     def setLocation(self):
         jijuk, _ = QFileDialog.getOpenFileName(self,"Get Jijuk DB", "", "Cif Files (*.cif);;Shp Files (*.shp);;All Files (*)")
@@ -430,14 +431,33 @@ class MyApp(QMainWindow):
             if jijuk.lower().endswith(".cif"):
                 gdf = CifGeoDataFrame(jijuk).convert_to_geodataframe()
             if jijuk.lower().endswith(".shp"):
-                gdf = gpd.read_file(jijuk, encoding="euc-kr")
+                gdf = gpd.read_file(jijuk)
             
             if gdf is None: 
                 return
             
-            print((float(self.tableWidget.item(1,1).text()), float(self.tableWidget.item(1,2).text())))
-            location = find_pnu_containing_point(gdf, (float(self.tableWidget.item(1,1).text()), float(self.tableWidget.item(1,2).text())))
-            print(location)
+            for i in range(self.tableWidget.rowCount()):
+                location = find_attributes_containing_point(gdf, (float(self.tableWidget.item(i,2).text()), float(self.tableWidget.item(i,1).text())), ["PNU", "JIBUN", "DOM"])
+                if not location is None:
+                    pnu, jibun, dom = location.iloc[0, :]
+                    self.tableWidget.item(i, 6).setText(self.get_district_name(pnu))
+                    self.tableWidget.item(i, 7).setText(self.only_jibun(jibun))
+                    self.tableWidget.item(i, 8).setText(self.dom_to_doho(dom))    
+    
+    
+    def get_district_name(self, pnulike:str) -> str:
+        cif_loader = CifGeoDataFrame()
+        return cif_loader.getDistrictName(pnulike=pnulike)
+    
+    def dom_to_doho(self, dom):
+        j_dom, _ = dom.split('/')
+        return j_dom[1:-1]
+    
+    def only_jibun(self, jibun):
+        jibun = jibun.replace(" ", "").strip()
+        if not jibun[-1].isdigit():
+            return jibun[:-1]
+        return jibun
 
 
 
@@ -450,34 +470,34 @@ class MyApp(QMainWindow):
                             {"rng": "A3:AF24","edges": ["outer"], "border_style": "thin",  "reset": False },
                             {"rng": "A3:A4","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
                             {"rng": "A6:A7","edges": ["inner_horizontal"], "border_style": None, "reset": False }, 
-                            {"rng": "A16:AF16","edges": ["inner_vertical"], "border_style": None, "reset": False }, 
-                            {"rng": "A17:AF18","edges": ["inner_vertical"], "border_style": None, "reset": False },
-                            {"rng": "A17:AF18","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "A16:AF19","edges": ["inner_vertical"], "border_style": None, "reset": False },
+                            {"rng": "A16:AF19","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B8:AF9","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B10:AF11","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "B12:AF13","edges": ["inner_horizontal"], "border_style": None, "reset": False },
-                            {"rng": "L3:M4","edges": ["right"], "border_style": None, "reset": False }
+                            {"rng": "N14:AF15","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "N3:S4","edges": ["inner_vertical"], "border_style": None, "reset": False }
             ]
-            mappings = [ {'fields': '점번호', 'address': 'B3'},
-                        {'fields': '도선등급', 'address': 'G3'},
-                        {'fields': '도선명', 'address': 'L3'},
+            mappings = [ {'fields': '점번호', 'address': 'B3', "callback":str_deco, 'kargs':{"postfix":"번"}},
+                        {'fields': '도선등급', 'address': 'G3', "callback":str_deco, 'kargs':{"postfix":"등"}},
+                        {'fields': '도선명', 'address': 'N3'},
                         {'fields': '표지재질', 'address': 'Z3'},
                         {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' '}},  
-                        {'fields': '지적(임야)도', 'address': 'Z5'},
+                        {'fields': '지적(임야)도', 'address': 'Z5', "callback":str_deco, 'kargs':{"postfix":"호"}},
                         {'fields': '설치년월일', 'address': 'A8', 'callback': hangul_date},
                         {'fields': 'X', 'address': 'B9'},
-                        {'fields': 'Y', 'address': 'E9'},
-                        {'fields': '경위도(B)', 'address': 'K9', 'callback':toBL},
-                        {'fields': '경위도(L)', 'address': 'V9', 'callback':toBL},
-                        {'fields': '표고', 'address': 'L15'},
-                        {'fields': '조사년월일', 'address': 'A21', 'callback': hangul_date},
-                        {'fields': '조사자(직)', 'address': 'B21'},
-                        {'fields': '조사자(성명)', 'address': 'E21'},
-                        {'fields': '조사내용', 'address': 'J21'},
-                        {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF18", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
+                        {'fields': 'Y', 'address': 'F9'},
+                        {'fields': '경위도(B)', 'address': 'M9', 'callback':toBL},
+                        {'fields': '경위도(L)', 'address': 'W9', 'callback':toBL},
+                        {'fields': '표고', 'address': 'N15'},
+                        {'fields': '조사년월일', 'address': 'A22', 'callback': hangul_date},
+                        {'fields': '조사자(직)', 'address': 'B22'},
+                        {'fields': '조사자(성명)', 'address': 'F22'},
+                        {'fields': '조사내용', 'address': 'L22'},
+                        {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF19", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
             ]  ## insert image
 
-            repoter = ReportFromDataframe(template='template.xlsx', sheetname='서식', savefile=fileName, dataframe=table_df, max_row=25, border_settings=border_settings, mappings=mappings)
+            repoter = ReportFromDataframe(template='template.xlsx', sheetname='서식', savefile=fileName, dataframe=table_df, max_row=26, border_settings=border_settings, mappings=mappings)
             repoter.report()
             print("report exported")
 
@@ -596,21 +616,22 @@ class MyApp(QMainWindow):
         
         for row, line in enumerate(lines):
             # line에 있는 중복된 공백을 공백하나로 합치고 tab으로 변경
+            print(line)
             while True:
                 if "  " in line:
-                    line.replace("  ",' ')
+                    line = line.replace("  ",' ')
                 else:
                     break
-            line.replace(' ', '\t')
+            line = line.replace(' ', '\t')
 
             data = line.strip().split('\t')
             if len(data) >= 3:
-                self.setCellItemAligned(row, 0, data[0])  # 점번호
-                self.setCellItemAligned(row, 1, f"{float(data[1])/100:.2f}")  # X
-                self.setCellItemAligned(row, 2, f"{float(data[2])/100:.2f}")  # Y
+                self.tableWidget.setCellItemAligned(row, 0, data[0])  # 점번호
+                self.tableWidget.setCellItemAligned(row, 1, f"{float(data[1])/100:.2f}")  # X
+                self.tableWidget.setCellItemAligned(row, 2, f"{float(data[2])/100:.2f}")  # Y
                 # 나머지는 빈 문자
                 for i in range(3, self.tableWidget.columnCount()+1):
-                    self.setCellItemAligned(row, i, '')
+                    self.tableWidget.setCellItemAligned(row, i, '')
 
 
 

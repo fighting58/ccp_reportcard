@@ -2,13 +2,24 @@
 import shapefile
 import os
 import geopandas as gpd
+import pandas as pd
 import tempfile
+from CodeDownload_codegokr import CodeGoKr
 
 class NotDecodingError(Exception): ...
 
 class CifGeoDataFrame:
-    def __init__(self, cif:str):
-        self.cif = cif
+    def __init__(self, cif:str = None):
+        if not cif is None:
+            self.cif = cif
+        self._code_db = None
+    @property
+    def code_db(self):
+        return self._code_db
+    
+    @code_db.setter
+    def code_db(self, db):
+        self._code_db = db
 
     def is_binary(self):
         with open(self.cif, 'r') as f:
@@ -55,14 +66,14 @@ class CifGeoDataFrame:
         except:
             return ' '
 
-    def convert_to_geodataframe(self):
+    def convert_to_geodataframe(self, encoding='utf-8'):
         cif_basename = os.path.basename(self.cif)
         if self.is_binary():
-            return
+            raise NotADirectoryError
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            shp = cif_basename.lower().replace('.cif', "_temp.shp")
-            with shapefile.Writer(shp, encoding='euc-kr') as w:
+            shp = os.path.join(temp_dir, cif_basename.lower().replace('.cif', "_temp.shp"))
+            with shapefile.Writer(shp, enooding=encoding) as w:
                 w.field('PNU', 'C', size='19')
                 w.field('DOM', 'C')
                 w.field('SCALE', 'C')
@@ -176,11 +187,29 @@ class CifGeoDataFrame:
                                 break
                 except Exception as e:
                     print(e)            
-            gdf = gpd.read_file(shp)
+            gdf = gpd.read_file(shp, encoding=encoding)
         return gdf
+
+    def getDistrictName(self, pnulike:str):
+        cd = pnulike[:10]
+        if self.code_db is None:
+            self.set_db()
+        result = self.code_db[self.code_db["법정동코드"]== cd]["법정동명"].values.tolist()[0]
+        return result
     
+    def set_db(self):
+        downloader = CodeGoKr()
+        if downloader.dbName is None:
+            downloader.get_db()
+        self.code_db = pd.read_csv(downloader.dbName, delimiter="\t", encoding='euc-kr', dtype={"법정동코드":str})
+
+
 
 if __name__ == "__main__":
-    cif = "4146110700000_마평동414-3_복호.Cif"
-    cif_df = CifGeoDataFrame(cif).convert_to_geodataframe()
-    print(cif_df)
+    # cif = "4146110700000_마평동414-3_복호.Cif"
+    # cif_df = CifGeoDataFrame(cif).convert_to_geodataframe()
+    # print(cif_df)
+
+    cif_loader = CifGeoDataFrame()
+    name = cif_loader.getDistrictName('5280042028234')
+    print(name)

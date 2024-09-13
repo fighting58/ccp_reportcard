@@ -36,7 +36,7 @@ def find_id_within_linearbuffer(gdf:gpd.GeoDataFrame, tp:tuple, angle:float, dis
     else:
         return None
 
-def find_pnu_containing_point(gdf: gpd.GeoDataFrame, tp: tuple) -> list:  
+def find_attributes_containing_point(gdf: gpd.GeoDataFrame, tp: tuple, colnames:list) -> list:  
     """
     점을 포함하는 피처들의 PNU 속성을 반환
 
@@ -48,11 +48,11 @@ def find_pnu_containing_point(gdf: gpd.GeoDataFrame, tp: tuple) -> list:
     """  
     tp = Point(tp)
     # Point A를 포함하는 폴리곤 찾기
-    containing_polygons = gdf[gdf.geometry.apply(lambda geom: tp.within(geom))]
+    containing_polygons = gdf[gdf.contains(tp)]
     
     # "PNU" 속성 반환
     if not containing_polygons.empty:
-        return containing_polygons['PNU'].tolist()
+        return containing_polygons[colnames]
     else:
         return None
 

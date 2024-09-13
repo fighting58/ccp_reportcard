@@ -15,8 +15,8 @@ def str_add(delim: str= '', **kargs):
     oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=val)
 
 def str_deco(**kargs):
-    prefix = kargs.get('prefix')
-    postfix = kargs.get('postfix')
+    prefix = kargs.get('prefix', '')
+    postfix = kargs.get('postfix', '')
     field = kargs.get('fields')
     df = kargs.get('dataframe')
     idx = kargs.get('index')
@@ -83,7 +83,7 @@ def toBL(**kargs):
             d, m, s = datum.split("-")
             s= f'{s[:7].ljust(7, "0")}'
 
-        d=f'{d.rjust(3)}'
-        data = "   ".join([d, m , s])
+        d=f'{d.rjust(4)}'
+        data = "  ".join([d, m , s])
         oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=data)
 
