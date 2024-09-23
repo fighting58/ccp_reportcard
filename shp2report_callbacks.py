@@ -5,13 +5,15 @@ import os
 def str_add(delim: str= '', **kargs):
     df = kargs.get('dataframe')
     idx = kargs.get('index')
+    prefix = kargs.get('prefix', '')
+    postfix = kargs.get('postfix', '')
     ret = []
     for field in kargs.get('fields'):
         datum = df.loc[idx, field]
         if not isinstance(datum, str):
             datum = str(datum)
         ret.append(datum)
-    val = delim.join(ret)
+    val = prefix + delim.join(ret) + postfix
     oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=val)
 
 def str_deco(**kargs):

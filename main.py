@@ -466,8 +466,8 @@ class MyApp(QMainWindow):
         if fileName:
             table_df = self.tablewidget_to_dataframe(self.tableWidget)
             table_df.fillna("", inplace=True)
-            border_settings =[{"rng": "A3:AF24","edges": ["all"], "border_style": "hair", "reset": True },  
-                            {"rng": "A3:AF24","edges": ["outer"], "border_style": "thin",  "reset": False },
+            border_settings =[{"rng": "A3:AF25","edges": ["all"], "border_style": "hair", "reset": True },  
+                            {"rng": "A3:AF25","edges": ["outer"], "border_style": "thin",  "reset": False },
                             {"rng": "A3:A4","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
                             {"rng": "A6:A7","edges": ["inner_horizontal"], "border_style": None, "reset": False }, 
                             {"rng": "A16:AF19","edges": ["inner_vertical"], "border_style": None, "reset": False },
@@ -482,7 +482,7 @@ class MyApp(QMainWindow):
                         {'fields': '도선등급', 'address': 'G3', "callback":str_deco, 'kargs':{"postfix":"등"}},
                         {'fields': '도선명', 'address': 'N3'},
                         {'fields': '표지재질', 'address': 'Z3'},
-                        {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' '}},  
+                        {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' ', 'postfix': "번지"}},  
                         {'fields': '지적(임야)도', 'address': 'Z5', "callback":str_deco, 'kargs':{"postfix":"호"}},
                         {'fields': '설치년월일', 'address': 'A8', 'callback': hangul_date},
                         {'fields': 'X', 'address': 'B9'},
