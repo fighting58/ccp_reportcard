@@ -327,6 +327,9 @@ class CustomTableWidget(QTableWidget):
             if next_item:
                 self.setCurrentItem(next_item)
                 self.editItem(next_item)
+    
+    def get_column_header(self) -> list:
+        return [self.horizontalHeaderItem(i).text() for i in range(self.columnCount())]
 
 
 class MyApp(QMainWindow):
@@ -574,6 +577,7 @@ class MyApp(QMainWindow):
                         item = QTableWidgetItem(row_data[header] if row_data[header] is not None else "")
                         table_widget.setItem(row_index, column_index, item)
                         item.setTextAlignment(Qt.AlignCenter)
+
             
             print(f"파일이 성공적으로 로드되었습니다: {file_path}")
 
