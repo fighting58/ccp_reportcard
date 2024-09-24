@@ -142,12 +142,14 @@ class CustomTableWidget(QTableWidget):
         elif event.key() == Qt.Key_Delete:
             self.deleteSelection()
         elif event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+            #===========================
             current = self.currentIndex()
             if self.state() == QAbstractItemView.EditingState:
                 # 현재 편집 중인 상태라면 편집을 완료합니다.
                 self.commitData(self.indexWidget(current))
 
-            self.moveToNextCell()  
+            self.moveToNextCell() 
+            #=============================== 
         else:
             super().keyPressEvent(event)
 
