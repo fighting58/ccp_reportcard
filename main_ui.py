@@ -1,11 +1,12 @@
 import sys
+import os
 import geopandas as gpd
 import pandas as pd
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, QPushButton, QLineEdit,
                                 QRadioButton, QTableWidget, QToolBar, QComboBox, QButtonGroup, QStyledItemDelegate,
-                                QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QAbstractItemDelegate,
+                                QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QAbstractItemDelegate, QFrame, 
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, QSizePolicy, QAbstractItemView)
-from PySide6.QtCore import Qt, QRect, Signal
+from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
 import icons_rc
 import pickle   
@@ -15,6 +16,7 @@ from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, t
 from cif_converter import CifGeoDataFrame
 import pickle
 from CodeDownload_codegokr import CodeGoKr
+from custom_image_editor import ImageEditor
 
 class CustomToggleButton(QWidget):
     stateChanged = Signal(bool)  # 상태 변경 시그널
@@ -57,6 +59,8 @@ class CustomToggleButton(QWidget):
         self.toggleButton.setChecked(checked)
 
 class CustomTableWidget(QTableWidget):
+    item_double_clicked = Signal(int, str, str, str)
+
     def __init__(self, parent=None):
         super().__init__()        
         self.setMouseTracking(True)
@@ -65,6 +69,26 @@ class CustomTableWidget(QTableWidget):
         self.dragging = False
         self.fill_handle_size = 6
         self.drag_rect = None
+        self._is_edit_mode = True
+        self.itemDoubleClicked.connect(self.on_item_double_clicked)
+
+    @property
+    def mode(self):
+        return self._is_edit_mode
+    @mode.setter
+    def set_mode(self, mode: bool):
+        self._is_edit_mode = mode
+
+    def on_item_double_clicked(self, item):
+        if not self.mode:
+            row = item.row()
+            num = self.item(row, 0).text()  # 점번호
+            path = self.item(row, 18).text()  # 사진파일(경로)
+            name = self.item(row, 19).text()  # 사진파일명
+
+            # 신호 발송
+            self.item_double_clicked.emit(row, num, path, name)
+            print(num, path, name)
 
     def mousePressEvent(self, event):
         item = self.itemAt(event.position().toPoint())
@@ -142,14 +166,11 @@ class CustomTableWidget(QTableWidget):
         elif event.key() == Qt.Key_Delete:
             self.deleteSelection()
         elif event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
-            #===========================
-            current = self.currentIndex()
-            if self.state() == QAbstractItemView.EditingState:
-                # 현재 편집 중인 상태라면 편집을 완료합니다.
-                self.commitData(self.indexWidget(current))
-
-            self.moveToNextCell() 
-            #=============================== 
+            if self.state() != QAbstractItemView.EditingState:
+                # 딜레이를 주어 편집 모드로 진입
+                QTimer.singleShot(100, lambda: self.editItem(self.currentItem()))
+            else:
+                self.moveToNextCell() 
         else:
             super().keyPressEvent(event)
 
@@ -204,7 +225,8 @@ class CustomTableWidget(QTableWidget):
 
             if next_item:
                 self.setCurrentItem(next_item)
-                self.editItem(next_item)
+                 # 딜레이를 주어 편집 모드로 진입
+                QTimer.singleShot(100, lambda: self.editItem(self.currentItem()))
     
     def get_column_header(self) -> list:
         return [self.horizontalHeaderItem(i).text() for i in range(self.columnCount())]
@@ -214,6 +236,18 @@ class CustomTableWidget(QTableWidget):
         col = headers.index(columnname)
         for row in range(self.rowCount()):
             self.setCellItemAligned(row, col, value)
+
+    def hide_columns(self, column_names):
+        """주어진 컬럼명을 기반으로 컬럼을 숨기는 함수"""
+        for col in range(self.columnCount()):
+            header_item = self.horizontalHeaderItem(col)
+            if header_item and header_item.text() in column_names:
+                self.setColumnHidden(col, True)  # 컬럼 숨기기
+    
+    def show_all_columns(self):
+        """모든 숨겨진 컬럼을 표시하는 함수"""
+        for col in range(self.columnCount()):
+            self.setColumnHidden(col, False)  # 모든 컬럼 숨김 해제
 
 class AutoResizeDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
@@ -254,7 +288,7 @@ class QCcpManager(QMainWindow):
         self.image_folder = None
         self.image_extension = ".jpg"
         self.is_same_name = False
-        self.mode = "edit-table"
+        self.mode = "edit-table"   # ['edit-table', 'edit-image']
         self.add_toolbar()
         self.setupUi()
         # self.add_menubar()
@@ -283,7 +317,7 @@ class QCcpManager(QMainWindow):
         self.tr_dat_button = QPushButton(side_container)
         self.tr_dat_button.setText('tr.dat 입력')
         self.load_project_button = QPushButton(side_container)
-        self.load_project_button.setText('기존 프록젝트')
+        self.load_project_button.setText('기존 프로젝트')
         input_data_sub_layout.addWidget(self.tr_dat_button)
         input_data_sub_layout.addWidget(self.load_project_button)
         input_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -443,6 +477,11 @@ class QCcpManager(QMainWindow):
         self.land_data_button.toggled.connect(land_data_sub.setVisible)
         self.export_button.toggled.connect(export_data_sub.setVisible)
 
+        #### main widget
+        main_frame = QFrame(self)
+        main_frame_layout = QHBoxLayout()
+
+        # custom table widget
         self.table_widget = CustomTableWidget(self)
         
         self.table_widget.setColumnCount(len(self.HEADER_LABELS))
@@ -455,18 +494,29 @@ class QCcpManager(QMainWindow):
 
         # AutoResizeDelegate 설정
         delegate = AutoResizeDelegate(self.table_widget)
-        self.table_widget.setItemDelegate(delegate)
-
-        
+        self.table_widget.setItemDelegate(delegate)        
         self.table_widget.setContextMenuPolicy(Qt.NoContextMenu)
-
         self.alignAllCellsCenter()
-        self.setCentralWidget(self.table_widget)
+
+        ## image editor widget
+        self.image_editor_frame = QFrame(self)
+        image_editor_frame_layout = QHBoxLayout()
+        self.image_editor = ImageEditor(self.image_editor_frame)
+        image_editor_frame_layout.addWidget(self.image_editor)
+        self.image_editor_frame.setLayout(image_editor_frame_layout)
+        self.image_editor_frame.hide()
+
+        main_frame_layout.addWidget(self.table_widget)
+        main_frame_layout.addWidget(self.image_editor_frame)
+       
+        main_frame.setLayout(main_frame_layout)
+        self.setCentralWidget(main_frame)
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
         self.status_message = QLabel(self)
         self.statusbar.addPermanentWidget(self.status_message)
 
+        # siganl-slot connection
         self.load_project_button.clicked.connect(self.loadProject)
         self.tr_dat_button.clicked.connect(self.getDatFile)
         self.common_apply_button.clicked.connect(self.apply_common_input)
@@ -479,9 +529,17 @@ class QCcpManager(QMainWindow):
         self.shp_button.clicked.connect(lambda: self.setLocation("shp"))
         self.export_project_button.clicked.connect(self.saveProject)
         self.export_xlsx_button.clicked.connect(self.saveToExcel)
+        self.table_widget.item_double_clicked.connect(self.on_item_double_clicked)
 
         self.change_mode_toggle.stateChanged.connect(self.change_mode)
     
+    @Slot(int, str, str, str)
+    def on_item_double_clicked(self, row, num, path, name):
+        orginal_image = os.path.join(path, name)
+        self.status_message.setText(' '.join([num, orginal_image]))
+        self.image_editor.open_image_from(orginal_image)
+        self.image_editor.table_row = row
+
     def alignAllCellsCenter(self):
         for row in range(self.table_widget.rowCount()):
             for col in range(self.table_widget.columnCount()):
@@ -523,17 +581,25 @@ class QCcpManager(QMainWindow):
         if self.change_mode_toggle.isChecked():
             self.mode = "edit-table"
             self.sidemenu.show()
-
+            self.table_widget.set_mode = True
+            self.image_editor_frame.setHidden(True)
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectItems)
             self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
+            self.table_widget.show_all_columns()
+            self.table_widget.setMinimumWidth(0)
+            self.table_widget.setMaximumWidth(16777215)
         else:
             self.mode = "edit-image"
             self.sidemenu.hide()
-
+            self.table_widget.set_mode = False
+            self.image_editor_frame.setVisible(True)
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
             self.table_widget.setSelectionMode(QAbstractItemView.SingleSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers) 
+            self.table_widget.hide_columns(['X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고'])
+            table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
+            self.table_widget.setFixedWidth(table_size)
 
 
     def add_toolbar(self):
