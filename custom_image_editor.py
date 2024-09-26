@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QAbstractItemDelegate, QFrame, QColorDialog,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, QSizePolicy, QAbstractItemView)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize, QRectF, QSizeF, QPointF
-from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QPixmap, QFont, QKeyEvent, QFontDatabase, QMouseEvent
+from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QPixmap, QFont, QKeyEvent, QFontDatabase, QMouseEvent, QCursor
 import icons_rc
 import pickle   
 from geometric_search import find_id_within_linearbuffer, find_attributes_containing_point
@@ -18,6 +18,13 @@ from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, t
 from cif_converter import CifGeoDataFrame
 import pickle
 from CodeDownload_codegokr import CodeGoKr
+
+
+class CustomCursor(QCursor):
+    def __init__(self):
+        super().__init__()
+        self.pen_cursor = QCursor(QPixmap('images/pen_cursor.png'), hotX=0, hotY=32)
+        self.text_cursor = QCursor(QPixmap('images/text_cursor.png'), hotX=0, hotY=0)
 
 class Layer:
     def __init__(self, pixmap=None):
@@ -65,6 +72,7 @@ class EditableComboBox(QComboBox):
 
 
 class ImageEditor(QMainWindow):
+    request_update = Signal(int)
     
     def __init__(self, parent=None):
         super().__init__()
@@ -82,11 +90,12 @@ class ImageEditor(QMainWindow):
         self.points = []
         self.temp_line = None
         self.line_color = QColor(Qt.blue)
-        self.line_width = 1
+        self.line_width = 2
         self.current_font_color = QColor(Qt.blue)
-        self.current_font = QFont("굴림", pointSize=14, weight=1)
+        self.current_font = QFont("굴림", pointSize=20, weight=1)
         self.IMAGE_SIZE = (400, 300)
         self.table_row = None
+        self.custom_cursor = CustomCursor()
         self.initUI()
 
     def initUI(self):       
@@ -115,6 +124,7 @@ class ImageEditor(QMainWindow):
 
     def add_toolbar(self, name='Toolbar'):
         self.toolbar = QToolBar(name)
+        self.toolbar.setFixedHeight(30)
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         
         # 툴바 아이콘 추가
@@ -230,44 +240,20 @@ class ImageEditor(QMainWindow):
         adding_text_action.triggered.connect(self.start_adding_text)
         self.toolbar.addAction(adding_text_action)   
 
+        self.toolbar2 = QToolBar("Apply Image Toolbar")
+        self.addToolBar(Qt.RightToolBarArea, self.toolbar2)
+
+        self.image_apply_button = QPushButton("Save \n && \n apply", self.toolbar2)
+        self.image_apply_button.clicked.connect(self.on_request_update)
+        self.toolbar2.addWidget(self.image_apply_button)
+
     # 새로운 메서드들
     def new_document(self):
         self.layers = []
         self.current_layer = None
 
-    def keyPressEvent(self, event: QKeyEvent):
-        if event.key() == Qt.Key_Delete:
-            self.delete_selected_items()
-
-    def show_layer_win(self):
-        if self.layers_win.isHidden():
-            self.layers_win.show()
-        self.show_layer_action.setEnabled(False)
-    
-    @Slot(bool)
-    def show_layer_enabled(self, visible):
-        if not visible:
-            self.show_layer_action.setEnabled(True)
-
-    def show_explorer_win(self):
-        if self.explorer_win.isHidden():
-            self.explorer_win.show()
-        self.show_explorer_action.setEnabled(False)
-
-    @Slot(bool)
-    def show_explorer_enabled(self, visible):
-        if not visible:
-            self.show_explorer_action.setEnabled(True)
-
-    def show_preview_win(self):
-        if self.preview_win.isHidden():
-            self.preview_win.show()
-        self.show_preview_action.setEnabled(False)
-    
-    @Slot(bool)
-    def show_preview_enabled(self, visible):
-        if not visible:
-            self.show_preview_action.setEnabled(True)
+    def on_request_update(self):
+        pass
 
     def delete_selected_items(self):
         if self.current_layer:
@@ -297,16 +283,6 @@ class ImageEditor(QMainWindow):
                 self.font_size_combo.setCurrentText(str(self.current_font.pointSize()))
         except ValueError:
             self.font_size_combo.setCurrentText(str(self.current_font.pointSize()))
-
-    def get_korean_fonts(self):
-        korean_fonts= []
-        fonts = QFontDatabase.families()
-        for font in fonts:
-            writing_systems = QFontDatabase.writingSystems(font)
-            for ws in writing_systems:
-                if ws == QFontDatabase.Korean:
-                    korean_fonts.append(font)
-        return korean_fonts
 
     def change_font_style(self, style):        
         if style == "Bold":
@@ -350,14 +326,6 @@ class ImageEditor(QMainWindow):
             self.add_layer(scaled_pixmap)
         # self.resize_pixmap()
     
-    @Slot(str)
-    def preview_image_from(self, file_name):        
-        if os.path.isfile(file_name):
-            pixmap = QPixmap(file_name)
-            size = self.preview.size()          
-            scaled_pixmap = self.scale_pixmap(pixmap, size=size)
-            self.preview.setPixmap(scaled_pixmap)
-
     def save_image(self):
         if not self.layers:
             return
@@ -371,28 +339,34 @@ class ImageEditor(QMainWindow):
             return pixmap.scaled(self.parent().size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         return pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
+    def get_korean_fonts(self):
+        korean_fonts= []
+        fonts = QFontDatabase.families()
+        for font in fonts:
+            writing_systems = QFontDatabase.writingSystems(font)
+            for ws in writing_systems:
+                if ws == QFontDatabase.Korean:
+                    korean_fonts.append(font)
+        return korean_fonts
+
     def add_layer(self, pixmap=None):
         if pixmap is None:
             pixmap = QPixmap(*self.IMAGE_SIZE)
             pixmap.fill(Qt.transparent)
         layer = Layer(pixmap=pixmap)
         self.layers.append(layer)
-
         self.current_layer = layer
         self.update_image()
 
-    def select_layer(self, item):
-        index = self.layer_list.row(item)
-        if 0 <= index < len(self.layers):
-            self.current_layer = self.layers[index]
-
     def start_drawing_line(self):
         self.drawing = True
+        self.adding_text = False
         self.points = []
         self.temp_line = None
-
+        
     def start_adding_text(self):
         self.adding_text = True
+        self.drawing = False
     
     def change_font_color(self):
         color = QColorDialog.getColor(initial=self.line_color)
@@ -400,6 +374,26 @@ class ImageEditor(QMainWindow):
             self.current_font_color = color
             self.font_color_btn.setStyleSheet(f"color: {color.name()}; border: none;")
         self.update_selected_text_style()
+
+    def change_line_color(self):
+        color = QColorDialog.getColor(initial=self.line_color)
+        if color.isValid():
+            self.line_color = color
+            self.line_color_menubtn.setStyleSheet(f"color: {color.name()}; border: none;")
+        if self.selected_line:
+            self.selected_line.color = color
+
+    def change_line_width(self):
+        thickness = self.h_slider.value()
+        self.line_width_label.setNum(thickness)
+        self.line_width = thickness
+        if self.selected_line:
+            self.selected_line.width = thickness
+
+    def change_line_type(self):
+        is_dashed = self.line_type_combo.currentText() == "─ ─ ─"
+        if self.selected_line:
+            self.selected_line.is_dashed = is_dashed
 
     def update_items(self, from_index, to_index):
         if from_index == -1:  # 새 아이템 추가
@@ -409,11 +403,6 @@ class ImageEditor(QMainWindow):
         else:  # 아이템 이동
             item = self.layers.pop(from_index)
             self.layers.insert(to_index, item)
-
-    def resizeEvent(self, event):
-        self.image_label.setMinimumSize(int(self.IMAGE_SIZE[0] *0.1), int(self.IMAGE_SIZE[1]*0.1))
-        self.resize_pixmap()
-        super().resizeEvent(event)       
 
     def resize_pixmap(self):
         parent_size = self.parent().size()
@@ -433,6 +422,15 @@ class ImageEditor(QMainWindow):
         if self.layers:
             self.open_image_from(self.current_image)
 
+    def resizeEvent(self, event):
+        self.image_label.setMinimumSize(int(self.IMAGE_SIZE[0] *0.1), int(self.IMAGE_SIZE[1]*0.1))
+        self.resize_pixmap()
+        super().resizeEvent(event)  
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key_Delete:
+            self.delete_selected_items()
+
     def mousePressEvent(self, event: QMouseEvent):
         if self.drawing:
             self.points.append(event.position())
@@ -445,6 +443,7 @@ class ImageEditor(QMainWindow):
                     self.current_layer.texts.append(TextItem(text, self.points[2], QFont(self.current_font), QColor(self.current_font_color)))
                     self.update_image()
                 self.drawing = False
+
                 self.points = []
                 self.temp_line = None
                 self.update_image()
@@ -455,6 +454,7 @@ class ImageEditor(QMainWindow):
                 self.update_image()
             self.unselect()
             self.adding_text = False
+
         else:
             # 선 선택 로직
             for layer in self.layers:
@@ -507,7 +507,7 @@ class ImageEditor(QMainWindow):
         if self.moving_text:
             self.moving_text = False
         if self.selected_line:
-            self.moving_vertex = None
+            self.moving_vertex = None        
         self.update_image()
     
     def mouseDoubleClickEvent(self, event: QMouseEvent):
@@ -557,26 +557,6 @@ class ImageEditor(QMainWindow):
             return 'mid'
         else:
             return 'end'
-
-    def change_line_color(self):
-        color = QColorDialog.getColor(initial=self.line_color)
-        if color.isValid():
-            self.line_color = color
-            self.line_color_menubtn.setStyleSheet(f"color: {color.name()}; border: none;")
-        if self.selected_line:
-            self.selected_line.color = color
-
-    def change_line_width(self):
-        thickness = self.h_slider.value()
-        self.line_width_label.setNum(thickness)
-        self.line_width = thickness
-        if self.selected_line:
-            self.selected_line.width = thickness
-
-    def change_line_type(self):
-        is_dashed = self.line_type_combo.currentText() == "─ ─ ─"
-        if self.selected_line:
-            self.selected_line.is_dashed = is_dashed
 
     def initialize_pixmap(self):
         result = QPixmap(400,300)
@@ -636,20 +616,27 @@ class ImageEditor(QMainWindow):
         self.image_label.setPixmap(result)
 
     def update_cursor(self, pos):
+        if self.drawing:
+            self.image_label.setCursor(self.custom_cursor.pen_cursor)
+        elif self.adding_text:
+            self.image_label.setCursor(self.custom_cursor.text_cursor)
+        else:
+            self.image_label.setCursor(Qt.ArrowCursor)
+
         if self.selected_line:
             if self.is_near_vertex(pos, self.selected_line.start) or \
                self.is_near_vertex(pos, self.selected_line.mid) or \
                self.is_near_vertex(pos, self.selected_line.end):
-                self.setCursor(Qt.CrossCursor)
+                self.image_label.setCursor(Qt.CrossCursor)
                 return
         
         for layer in self.layers:
             for text_item in layer.texts:
                 if text_item.rect and text_item.rect.contains(pos):
-                    self.setCursor(Qt.SizeAllCursor)
+                    self.image_label.setCursor(Qt.SizeAllCursor)
                     return
         
-        self.setCursor(Qt.ArrowCursor)
+        
 
     def is_near_vertex(self, point, vertex, threshold=5):
         return (point - vertex).manhattanLength() < threshold

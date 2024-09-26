@@ -66,7 +66,7 @@ class CifGeoDataFrame:
         except:
             return ' '
 
-    def convert_to_geodataframe(self, encoding='utf-8'):
+    def convert_to_geodataframe(self, encoding='euc-kr'):
         cif_basename = os.path.basename(self.cif)
         if self.is_binary():
             raise NotADirectoryError

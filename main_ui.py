@@ -785,7 +785,7 @@ class QCcpManager(QMainWindow):
                         self.table_widget.item(i, 8).setText(self.dom_to_doho(dom))    
                 self.status_message.setText("주소검색을 마쳤습니다. 미작성된 소재지를 확인하세요.")
         except Exception as e:
-            self.status_message.setText(e)
+            self.status_message.setText(str(e))
     
     def get_district_name(self, pnulike:str) -> str:
         cif_loader = CifGeoDataFrame()
