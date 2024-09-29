@@ -23,8 +23,8 @@ from CodeDownload_codegokr import CodeGoKr
 class CustomCursor(QCursor):
     def __init__(self):
         super().__init__()
-        self.pen_cursor = QCursor(QPixmap('images/pen_cursor.png'), hotX=0, hotY=32)
-        self.text_cursor = QCursor(QPixmap('images/text_cursor.png'), hotX=0, hotY=0)
+        self.pen_cursor = QCursor(QPixmap('images/pen_cursor.svg'), hotX=0, hotY=20)
+        self.text_cursor = QCursor(QPixmap('images/text_cursor.svg'), hotX=0, hotY=0)
 
 class Layer:
     def __init__(self, pixmap=None):
@@ -72,7 +72,7 @@ class EditableComboBox(QComboBox):
 
 
 class ImageEditor(QMainWindow):
-    request_update = Signal(int)
+    table_update_request = Signal(int, str, str)
     
     def __init__(self, parent=None):
         super().__init__()
@@ -92,7 +92,7 @@ class ImageEditor(QMainWindow):
         self.line_color = QColor(Qt.blue)
         self.line_width = 2
         self.current_font_color = QColor(Qt.blue)
-        self.current_font = QFont("굴림", pointSize=20, weight=1)
+        self.current_font = QFont("굴림", pointSize=30, weight=1)
         self.IMAGE_SIZE = (400, 300)
         self.table_row = None
         self.custom_cursor = CustomCursor()
@@ -240,6 +240,7 @@ class ImageEditor(QMainWindow):
         adding_text_action.triggered.connect(self.start_adding_text)
         self.toolbar.addAction(adding_text_action)   
 
+        # Toolbar2
         self.toolbar2 = QToolBar("Apply Image Toolbar")
         self.addToolBar(Qt.RightToolBarArea, self.toolbar2)
 
@@ -251,9 +252,17 @@ class ImageEditor(QMainWindow):
     def new_document(self):
         self.layers = []
         self.current_layer = None
+        self.table_row = None
 
     def on_request_update(self):
-        pass
+        if not self.table_row is None:
+            path, _ = os.path.split(self.current_image)
+            new_path = path + '/거리입력' 
+            new_filename = f"{self.table_row[1]}_edit.png"   # 파일명을 "{도근번호}_edit"으로 설정하고 png형식으로 저장
+            if not os.path.exists(new_path):
+                os.mkdir(new_path)        # 거리입력 디렉토리 생성
+            self.image_label.pixmap().save(os.path.join(new_path, new_filename), quality=50)
+            self.table_update_request.emit(self.table_row[0], new_path, new_filename)
 
     def delete_selected_items(self):
         if self.current_layer:
@@ -326,12 +335,14 @@ class ImageEditor(QMainWindow):
             self.add_layer(scaled_pixmap)
         # self.resize_pixmap()
     
-    def save_image(self):
+    def save_image(self, filename=None):
         if not self.layers:
             return
         self.unselect()
-        file_name, _ = QFileDialog.getSaveFileName(self, "이미지 저장", "", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
-        if file_name:
+        if filename is None:
+            file_name, _ = QFileDialog.getSaveFileName(self, "이미지 저장", "", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
+
+        if filename:
             self.image_label.pixmap().save(file_name, quality=50)
 
     def scale_pixmap(self, pixmap, size=None):

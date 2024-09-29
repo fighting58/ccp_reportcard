@@ -530,6 +530,7 @@ class QCcpManager(QMainWindow):
         self.export_project_button.clicked.connect(self.saveProject)
         self.export_xlsx_button.clicked.connect(self.saveToExcel)
         self.table_widget.item_double_clicked.connect(self.on_item_double_clicked)
+        self.image_editor.table_update_request.connect(self.on_table_update_request)
 
         self.change_mode_toggle.stateChanged.connect(self.change_mode)
     
@@ -538,7 +539,13 @@ class QCcpManager(QMainWindow):
         orginal_image = os.path.join(path, name)
         self.status_message.setText(' '.join([num, orginal_image]))
         self.image_editor.open_image_from(orginal_image)
-        self.image_editor.table_row = row
+        self.image_editor.table_row = (row, num)
+
+    @Slot(int, str, str)
+    def on_table_update_request(self, row, path, filename):
+        self.table_widget.setCellItemAligned(row, self._headerindex("사진파일(경로)"), path)
+        self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), filename)
+
 
     def alignAllCellsCenter(self):
         for row in range(self.table_widget.rowCount()):
@@ -598,6 +605,7 @@ class QCcpManager(QMainWindow):
             self.table_widget.setSelectionMode(QAbstractItemView.SingleSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers) 
             self.table_widget.hide_columns(['X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고'])
+            self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
             table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
             self.table_widget.setFixedWidth(table_size)
 
