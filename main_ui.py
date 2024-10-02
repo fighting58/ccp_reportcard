@@ -158,6 +158,16 @@ class CustomTableWidget(QTableWidget):
             painter.setPen(QColor(0, 0, 255))
             painter.drawRect(self.drag_rect)
 
+        pen_color = QColor(255, 255, 255)  # 흰색 경계선
+        painter.setPen(pen_color)
+
+        # 첫 번째 열 경계선 그리기
+        for row in range(self.rowCount()):
+            rect = self.visualRect(self.model().index(row, 0))
+            painter.drawLine(rect.topLeft(), rect.bottomLeft())
+
+        painter.end()
+
     def keyPressEvent(self, event):
         if event.matches(QKeySequence.Copy):
             self.copySelection()
@@ -291,6 +301,7 @@ class QCcpManager(QMainWindow):
         self.mode = "edit-table"   # ['edit-table', 'edit-image']
         self.add_toolbar()
         self.setupUi()
+        self.showMaximized()
         # self.add_menubar()
         
         self.show()
@@ -300,14 +311,17 @@ class QCcpManager(QMainWindow):
         self.button_group = QButtonGroup(self)
         # QDockWidget
         side_container = QWidget()
+        # side_container.setStyleSheet("background-color: black;")
         side_layout = QVBoxLayout()
         side_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # 데이터 입력 ==========
+        vlayout_data = QVBoxLayout()
         self.input_data_button = QPushButton(side_container)
+        self.input_data_button.setObjectName("input_data_button")
         self.input_data_button.setText('데이터 입력')
         self.input_data_button.setCheckable(True)
-        side_layout.addWidget(self.input_data_button)
+        vlayout_data.addWidget(self.input_data_button)
         self.button_group.addButton(self.input_data_button)
         
         # 데이터 입력 - 서브
@@ -323,13 +337,17 @@ class QCcpManager(QMainWindow):
         input_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         input_data_sub.setLayout(input_data_sub_layout)
         input_data_sub.setVisible(False)
-        side_layout.addWidget(input_data_sub)
+        vlayout_data.addWidget(input_data_sub)
+        vlayout_data.setSpacing(5)
+        side_layout.addLayout(vlayout_data)
         
         # 공통값 입력 ==========
+        vlayout_common = QVBoxLayout()
         self.common_input_button = QPushButton(side_container)
+        self.common_input_button.setObjectName("common_input_button")
         self.common_input_button.setText('공통값 입력')
         self.common_input_button.setCheckable(True)
-        side_layout.addWidget(self.common_input_button)
+        vlayout_common.addWidget(self.common_input_button)
         self.button_group.addButton(self.common_input_button)
 
         # 공통값 입력 - 서브
@@ -366,7 +384,7 @@ class QCcpManager(QMainWindow):
         common_input_sub_layout.addWidget(self.origin_input)
 
         hlayout1 = QHBoxLayout()
-        hspacer1 = QSpacerItem(10,10, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        hspacer1 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.common_apply_button = QPushButton(side_container)
         self.common_apply_button.setText('적용')
         hlayout1.addItem(hspacer1)
@@ -376,13 +394,17 @@ class QCcpManager(QMainWindow):
         common_input_sub.setLayout(common_input_sub_layout)
         
         common_input_sub.setVisible(False)
-        side_layout.addWidget(common_input_sub)
+        vlayout_common.addWidget(common_input_sub)
+        vlayout_common.setSpacing(5)
+        side_layout.addLayout(vlayout_common)
 
         # 사진관리 ================
+        vlayout_image = QVBoxLayout()
         self.image_management_button = QPushButton(side_container)
+        self.image_management_button.setObjectName("image_management_button")
         self.image_management_button.setText('사진 관리')
         self.image_management_button.setCheckable(True)
-        side_layout.addWidget(self.image_management_button)
+        vlayout_image.addWidget(self.image_management_button)
         self.button_group.addButton(self.image_management_button)
 
         # 사진관리 - 서브
@@ -419,13 +441,17 @@ class QCcpManager(QMainWindow):
         image_management_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         image_management_sub.setLayout(image_management_sub_layout)
         image_management_sub.setVisible(False)
-        side_layout.addWidget(image_management_sub)
+        vlayout_image.addWidget(image_management_sub)
+        vlayout_image.setSpacing(5)
+        side_layout.addLayout(vlayout_image)
 
         # 토지소재지 입력 ==================
+        vlayout_land = QVBoxLayout()
         self.land_data_button = QPushButton(side_container)
+        self.land_data_button.setObjectName("land_data_button")
         self.land_data_button.setText('토지소재지 입력')
         self.land_data_button.setCheckable(True)
-        side_layout.addWidget(self.land_data_button)
+        vlayout_land.addWidget(self.land_data_button)
         self.button_group.addButton(self.land_data_button)
         
         # 토지소재지 입력 - 서브
@@ -442,13 +468,17 @@ class QCcpManager(QMainWindow):
         land_data_sub.setLayout(land_data_sub_layout)
         
         land_data_sub.setVisible(False)
-        side_layout.addWidget(land_data_sub)
+        vlayout_land.addWidget(land_data_sub)
+        vlayout_land.setSpacing(5)
+        side_layout.addLayout(vlayout_land)
 
         # 내보내기 ==================
+        vlayout_export = QVBoxLayout()
         self.export_button = QPushButton(side_container)
+        self.export_button.setObjectName("export_button")
         self.export_button.setText('내보내기')
         self.export_button.setCheckable(True)
-        side_layout.addWidget(self.export_button)
+        vlayout_export.addWidget(self.export_button)
         self.button_group.addButton(self.export_button)
         
         # 내보내기 - 서브
@@ -464,32 +494,66 @@ class QCcpManager(QMainWindow):
         export_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         export_data_sub.setLayout(export_data_sub_layout)
         export_data_sub.setVisible(False)
-        side_layout.addWidget(export_data_sub)
+        vlayout_export.addWidget(export_data_sub)
+        vlayout_export.setSpacing(5)        
+        side_layout.addLayout(vlayout_export)
+
         side_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        # 기타 툴 ==================
+        vlayout_extra = QVBoxLayout()
+        self.extra_tools_button = QPushButton(side_container)
+        self.extra_tools_button.setObjectName("extra_tools")
+        self.extra_tools_button.setText('기타 툴들')
+        self.extra_tools_button.setCheckable(True)
+        vlayout_extra.addWidget(self.extra_tools_button)
+        self.button_group.addButton(self.extra_tools_button)
+        
+        # 기타 툴 - 서브
+        extra_tools_sub = QWidget(side_container)
+        extra_tools_sub.setFixedHeight(100)
+        extra_tools_sub_layout = QVBoxLayout()
+        self.update_code_button = QPushButton(side_container)
+        self.update_code_button.setText('법정동코드 업데이트')
+        self.classify_image_button = QPushButton(side_container)
+        self.classify_image_button.setText('이미지 분류')
+        extra_tools_sub_layout.addWidget(self.update_code_button)
+        extra_tools_sub_layout.addWidget(self.classify_image_button)
+        extra_tools_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        extra_tools_sub.setLayout(extra_tools_sub_layout)
+        extra_tools_sub.setVisible(False)
+        vlayout_extra.addWidget(extra_tools_sub)
+        vlayout_extra.setSpacing(5)        
+        side_layout.addLayout(vlayout_extra)
+
+
+        side_layout.setSpacing(30)
 
         self.button_group.setExclusive(True)
         side_container.setLayout(side_layout)
-        self.sidemenu = self.add_dockableWidget("테이블 입력", side_container, 600)
+        self.sidemenu = self.add_dockableWidget("테이블 입력", side_container, 800)
+
 
         self.input_data_button.toggled.connect(input_data_sub.setVisible)
         self.common_input_button.toggled.connect(common_input_sub.setVisible)
         self.image_management_button.toggled.connect(image_management_sub.setVisible)
         self.land_data_button.toggled.connect(land_data_sub.setVisible)
         self.export_button.toggled.connect(export_data_sub.setVisible)
+        self.extra_tools_button.toggled.connect(extra_tools_sub.setVisible)
 
-        #### main widget
+        #### main widget #########################################################################################
         main_frame = QFrame(self)
-        main_frame_layout = QHBoxLayout()
+        main_frame_layout = QHBoxLayout()       
 
         # custom table widget
         self.table_widget = CustomTableWidget(self)
-        
+        self.table_widget.setObjectName("table_widget")
         self.table_widget.setColumnCount(len(self.HEADER_LABELS))
         self.table_widget.setRowCount(5)
         self.table_widget.setHorizontalHeaderLabels(self.HEADER_LABELS)
         self.table_widget.setWordWrap(False)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.table_widget.setStyleSheet("QHeaderView::section { background-color: lightgray; border: 1px solid white; }")
+        self.table_widget.setStyleSheet("QHeaderView::section { background-color: lightgray; border: 1px solid white; text-align: center; }")
         self.table_widget.verticalHeader().hide()
 
         # AutoResizeDelegate 설정
@@ -502,6 +566,8 @@ class QCcpManager(QMainWindow):
         self.image_editor_frame = QFrame(self)
         image_editor_frame_layout = QHBoxLayout()
         self.image_editor = ImageEditor(self.image_editor_frame)
+        self.image_editor.setObjectName("image_editor")
+        self.image_editor.setAttribute(Qt.WA_TranslucentBackground)
         image_editor_frame_layout.addWidget(self.image_editor)
         self.image_editor_frame.setLayout(image_editor_frame_layout)
         self.image_editor_frame.hide()
@@ -594,8 +660,9 @@ class QCcpManager(QMainWindow):
             self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
             self.table_widget.show_all_columns()
+            self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), self.table_widget.columnWidth(0))
             self.table_widget.setMinimumWidth(0)
-            self.table_widget.setMaximumWidth(16777215)
+            self.table_widget.setMaximumWidth(10000)
         else:
             self.mode = "edit-image"
             self.sidemenu.hide()
@@ -607,7 +674,7 @@ class QCcpManager(QMainWindow):
             self.table_widget.hide_columns(['X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고'])
             self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
             table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
-            self.table_widget.setFixedWidth(table_size)
+            self.table_widget.setFixedWidth(table_size+5)
 
 
     def add_toolbar(self):
@@ -874,6 +941,7 @@ class QCcpManager(QMainWindow):
 
     def add_dockableWidget(self, title:str, wdg:QWidget, maxheight:int=0):
         dock = QDockWidget(title, self)
+        dock.setTitleBarWidget(QWidget())
         dock.setAllowedAreas(Qt.LeftDockWidgetArea)
         dock.setWidget(wdg)
         dock.setMaximumHeight(maxheight)
@@ -888,4 +956,52 @@ class QCcpManager(QMainWindow):
 if __name__ == "__main__":
     app=QApplication(sys.argv)
     ex = QCcpManager()
+    ex.setStyleSheet("""
+    /* 전체 스타일 지정 */
+    QMainWindow {
+        background-image: url('images/background2.jpg'); 
+        background-color: #aaa;
+        }
+    QStatusBar QLabel {
+        color: white;
+    }
+    QTableWidget {
+        border: none;
+        gridline-color: white;
+        outline: 0;
+        background-color: transparent;
+        }
+    QToolBar {
+        background-color: #F0F0F0;
+        }
+    QDockWidget QPushButton {
+        padding: 5px 10px 5px 10px;
+        border-radius: 10px;
+        color: #5F84A2;
+        background-color: #F0F0F0;
+    }
+    QDockWidget QPushButton::hover {
+        border: 2px solid #5F84A2;
+    }
+    #image_editor #image_label {
+        background-color: white;
+        }
+    #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
+        border: none; 
+        padding:10px; 
+        font-weight:700; 
+        border-radius: 5px;
+        } 
+    #input_data_button::hover, #common_input_button::hover, #image_management_button::hover, #land_data_button::hover, #export_button::hover, #extra_tools::hover {
+        color: #EAF6FF;
+        background-color: #0983C8;
+        } 
+    #input_data_button::checked, #common_input_button::checked, #image_management_button::checked, #land_data_button::checked, #export_button::checked, #extra_tools::checked {
+        color: #EAF6FF;
+        background-color: #1E4171;
+        }
+    #image-editor QMainWindow{
+        background: none;
+        }
+    """)
     sys.exit(app.exec())

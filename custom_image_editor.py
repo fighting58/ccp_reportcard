@@ -89,10 +89,10 @@ class ImageEditor(QMainWindow):
         self.moving_vertex = None
         self.points = []
         self.temp_line = None
-        self.line_color = QColor(Qt.blue)
+        self.line_color = QColor(Qt.red)
         self.line_width = 2
         self.current_font_color = QColor(Qt.blue)
-        self.current_font = QFont("굴림", pointSize=30, weight=1)
+        self.current_font = QFont("굴림", pointSize=24, weight=1)
         self.IMAGE_SIZE = (400, 300)
         self.table_row = None
         self.custom_cursor = CustomCursor()
@@ -103,7 +103,7 @@ class ImageEditor(QMainWindow):
 
         # image canvas
         self.image_label = QLabel(self)
-        self.image_label.setStyleSheet("border: 2px solid red;")
+        self.image_label.setObjectName("image_label")
         self.image_label.setMaximumSize(*self.IMAGE_SIZE)
         self.image_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)    
         self.image_label.setStyleSheet("border: 1px solid black;")
@@ -117,7 +117,7 @@ class ImageEditor(QMainWindow):
         layout = QHBoxLayout(main_widget)
         layout.addWidget(self.image_label)
 
-        self.setCentralWidget(main_widget)
+        self.setCentralWidget(main_widget)        
 
         # 키 이벤트를 처리하기 위해 포커스 정책 설정
         self.setFocusPolicy(Qt.StrongFocus)
@@ -209,6 +209,7 @@ class ImageEditor(QMainWindow):
         self.h_slider.setFixedSize(40, 10)
         self.h_slider.setMinimum(1)
         self.h_slider.setMaximum(5)
+        self.h_slider.setValue(self.line_width)
         self.h_slider.setOrientation(Qt.Horizontal)
         self.h_slider.valueChanged.connect(self.change_line_width)
         self.line_width_label = QLabel(line_width_setting)
@@ -232,11 +233,13 @@ class ImageEditor(QMainWindow):
 
         # 거리 입력 버튼
         line_drawing_action = QAction(QIcon(':/icons/pen-2-svgrepo-com.svg'), '거리 입력', self)
+        line_drawing_action.setShortcut(QKeySequence("Ctrl+L"))
         line_drawing_action.triggered.connect(self.start_drawing_line)
         self.toolbar.addAction(line_drawing_action)        
 
         # 텍스트 입력 버튼
         adding_text_action = QAction(QIcon(':/icons/text-selection-svgrepo-com.svg'), '텍스트 입력', self)
+        adding_text_action.setShortcut(QKeySequence("Ctrl+T"))
         adding_text_action.triggered.connect(self.start_adding_text)
         self.toolbar.addAction(adding_text_action)   
 
@@ -245,6 +248,7 @@ class ImageEditor(QMainWindow):
         self.addToolBar(Qt.RightToolBarArea, self.toolbar2)
 
         self.image_apply_button = QPushButton("Save \n && \n apply", self.toolbar2)
+        self.image_apply_button.setShortcut(QKeySequence("Ctrl+Return"))
         self.image_apply_button.clicked.connect(self.on_request_update)
         self.toolbar2.addWidget(self.image_apply_button)
 
@@ -584,7 +588,7 @@ class ImageEditor(QMainWindow):
         painter = QPainter(result)
         
         for layer in self.layers[::-1]:
-            painter.setOpacity(0.8)
+            # painter.setOpacity(0.8)
             painter.drawPixmap(0, 0, layer.pixmap)            
             
             for line in layer.lines:
