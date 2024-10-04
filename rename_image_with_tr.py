@@ -1,7 +1,7 @@
 import sys
 import os
 import pandas as pd
-from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QFileDialog
+from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QFileDialog, QLabel
 from PySide6.QtCore import Qt
 from PIL import Image
 import PIL.ExifTags as ExifTags
@@ -35,6 +35,10 @@ class MyDialog(QDialog):
         self.run_button = QPushButton("실행")
         self.run_button.clicked.connect(self.run_process)
         layout.addWidget(self.run_button)
+
+        # 상태 표시 레이블
+        self.status_label = QLabel("Status: Ready")
+        layout.addWidget(self.status_label)
 
         self.setLayout(layout)
 
@@ -72,7 +76,7 @@ class MyDialog(QDialog):
 
     def run_process(self):
         if self.tr_df is None or self.pic_path is None:
-            print("tr.dat 파일 또는 이미지 폴더가 설정되지 않았습니다.")
+            self.status_label.setText("tr.dat 파일 또는 이미지 폴더가 설정되지 않았습니다.")
             return
 
         # 이미지 파일 처리
@@ -130,7 +134,7 @@ class MyDialog(QDialog):
     def transform(self, lon, lat):
         # 경도, 위도를 직교 좌표로 변환
         transformer = CoordinateTransformer()
-        xx, yy = transformer.transformer(lon=lon, lat=lat)
+        xx, yy = transformer(lon=lon, lat=lat)
         return xx, yy
 
     def calculate_and_rename_files(self, pic_df):
