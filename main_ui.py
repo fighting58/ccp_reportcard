@@ -15,6 +15,7 @@ from shp2report import ReportFromDataframe
 from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL
 from cif_converter import CifGeoDataFrame
 import pickle
+from pathlib import Path
 from CodeDownload_codegokr import CodeGoKr
 from custom_image_editor import ImageEditor
 
@@ -311,7 +312,6 @@ class QCcpManager(QMainWindow):
         self.button_group = QButtonGroup(self)
         # QDockWidget
         side_container = QWidget()
-        # side_container.setStyleSheet("background-color: black;")
         side_layout = QVBoxLayout()
         side_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
@@ -523,16 +523,14 @@ class QCcpManager(QMainWindow):
         extra_tools_sub.setLayout(extra_tools_sub_layout)
         extra_tools_sub.setVisible(False)
         vlayout_extra.addWidget(extra_tools_sub)
-        vlayout_extra.setSpacing(5)        
+        vlayout_extra.setSpacing(5)
+
         side_layout.addLayout(vlayout_extra)
-
-
         side_layout.setSpacing(30)
 
         self.button_group.setExclusive(True)
         side_container.setLayout(side_layout)
         self.sidemenu = self.add_dockableWidget("테이블 입력", side_container, 800)
-
 
         self.input_data_button.toggled.connect(input_data_sub.setVisible)
         self.common_input_button.toggled.connect(common_input_sub.setVisible)
@@ -553,7 +551,6 @@ class QCcpManager(QMainWindow):
         self.table_widget.setHorizontalHeaderLabels(self.HEADER_LABELS)
         self.table_widget.setWordWrap(False)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.table_widget.setStyleSheet("QHeaderView::section { background-color: lightgray; border: 1px solid white; text-align: center; }")
         self.table_widget.verticalHeader().hide()
 
         # AutoResizeDelegate 설정
@@ -582,7 +579,7 @@ class QCcpManager(QMainWindow):
         self.status_message = QLabel(self)
         self.statusbar.addPermanentWidget(self.status_message)
 
-        # siganl-slot connection
+        # signal-slot connection
         self.load_project_button.clicked.connect(self.loadProject)
         self.tr_dat_button.clicked.connect(self.getDatFile)
         self.common_apply_button.clicked.connect(self.apply_common_input)
@@ -597,7 +594,8 @@ class QCcpManager(QMainWindow):
         self.export_xlsx_button.clicked.connect(self.saveToExcel)
         self.table_widget.item_double_clicked.connect(self.on_item_double_clicked)
         self.image_editor.table_update_request.connect(self.on_table_update_request)
-
+        self.update_code_button.clicked.connect(self.on_update_code)
+        self.classify_image_button.clicked.connect(self.on_classify_image)
         self.change_mode_toggle.stateChanged.connect(self.change_mode)
     
     @Slot(int, str, str, str)
@@ -676,7 +674,6 @@ class QCcpManager(QMainWindow):
             table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
             self.table_widget.setFixedWidth(table_size+5)
 
-
     def add_toolbar(self):
         self.toolbar = QToolBar()
         self.toolbar.setWindowTitle('MainToolbar')
@@ -697,6 +694,16 @@ class QCcpManager(QMainWindow):
 
         self.change_mode_toggle = CustomToggleButton()
         self.toolbar.addWidget(self.change_mode_toggle)
+
+    def add_dockableWidget(self, title:str, wdg:QWidget, maxheight:int=0):
+        dock = QDockWidget(title, self)
+        dock.setTitleBarWidget(QWidget())
+        dock.setAllowedAreas(Qt.LeftDockWidgetArea)
+        dock.setWidget(wdg)
+        dock.setMaximumHeight(maxheight)
+        dock.setMinimumWidth(180)
+        self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
+        return dock    
 
     def load_table_from_pickle(self, table_widget: QTableWidget, file_path: str):
         try:
@@ -782,15 +789,15 @@ class QCcpManager(QMainWindow):
         self.table_widget.setRowCount(self.rowCount)
         
         for row, line in enumerate(lines):
-            # line에 있는 중복된 공백을 공백하나로 합치고 tab으로 변경
+            # line의 양끝 공백문자를 모두 제거한 후 tab을 모두 공백으로 변경
+            line = line.replace('\t', ' ')
+            # line에 있는 중복된 공백을 공백하나로 변경
             while True:
                 if "  " in line:
                     line = line.replace("  ",' ')
                 else:
                     break
-            line = line.replace(' ', '\t')
-
-            data = line.strip().split('\t')
+            data = line.strip().split(' ')
             if len(data) >= 3:
                 self.table_widget.setCellItemAligned(row, 0, data[0])  # 점번호
                 self.table_widget.setCellItemAligned(row, 1, f"{float(data[1])/100:.2f}")  # X
@@ -939,15 +946,13 @@ class QCcpManager(QMainWindow):
             repoter.report()
             self.status_message.setText(f"성과표가 성공적으로 저장되었습니다: {fileName}")
 
-    def add_dockableWidget(self, title:str, wdg:QWidget, maxheight:int=0):
-        dock = QDockWidget(title, self)
-        dock.setTitleBarWidget(QWidget())
-        dock.setAllowedAreas(Qt.LeftDockWidgetArea)
-        dock.setWidget(wdg)
-        dock.setMaximumHeight(maxheight)
-        dock.setMinimumWidth(180)
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
-        return dock    
+    def on_update_code(self):
+        db = CodeGoKr().get_db()
+        if not db is None:
+            self.status_message.setText(f'Code 업데이트 완료...{db}')
+
+    def on_classify_image(self):
+        pass
 
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
@@ -956,52 +961,5 @@ class QCcpManager(QMainWindow):
 if __name__ == "__main__":
     app=QApplication(sys.argv)
     ex = QCcpManager()
-    ex.setStyleSheet("""
-    /* 전체 스타일 지정 */
-    QMainWindow {
-        background-image: url('images/background2.jpg'); 
-        background-color: #aaa;
-        }
-    QStatusBar QLabel {
-        color: white;
-    }
-    QTableWidget {
-        border: none;
-        gridline-color: white;
-        outline: 0;
-        background-color: transparent;
-        }
-    QToolBar {
-        background-color: #F0F0F0;
-        }
-    QDockWidget QPushButton {
-        padding: 5px 10px 5px 10px;
-        border-radius: 10px;
-        color: #5F84A2;
-        background-color: #F0F0F0;
-    }
-    QDockWidget QPushButton::hover {
-        border: 2px solid #5F84A2;
-    }
-    #image_editor #image_label {
-        background-color: white;
-        }
-    #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
-        border: none; 
-        padding:10px; 
-        font-weight:700; 
-        border-radius: 5px;
-        } 
-    #input_data_button::hover, #common_input_button::hover, #image_management_button::hover, #land_data_button::hover, #export_button::hover, #extra_tools::hover {
-        color: #EAF6FF;
-        background-color: #0983C8;
-        } 
-    #input_data_button::checked, #common_input_button::checked, #image_management_button::checked, #land_data_button::checked, #export_button::checked, #extra_tools::checked {
-        color: #EAF6FF;
-        background-color: #1E4171;
-        }
-    #image-editor QMainWindow{
-        background: none;
-        }
-    """)
+    ex.setStyleSheet(Path('main_ui.qss').read_text(encoding='utf-8'))
     sys.exit(app.exec())
