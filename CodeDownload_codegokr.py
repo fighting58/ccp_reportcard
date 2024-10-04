@@ -83,7 +83,6 @@ class CodeGoKr:
 
     def get_db(self):
         """ 일괄 처리 """
-
         self.__getzip()     
 
         if os.path.exists(self.filename):

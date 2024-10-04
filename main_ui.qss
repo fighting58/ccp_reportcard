@@ -1,0 +1,51 @@
+/* 전체 스타일 지정 */
+    QMainWindow {
+        background-image: url('images/background2.jpg'); 
+        background-color: #aaa;
+        }
+    QStatusBar QLabel {
+        color: white;
+        }
+    #table_widget {
+        border: none;
+        gridline-color: white;
+        outline: 0;
+        background-color: transparent;
+        }
+    #table_widget QHeaderView::section { 
+        background-color: darkgray; 
+        border: 1px solid white; 
+        text-align: center; 
+        }
+    QToolBar {
+        background-color: #F0F0F0;
+        }
+    QDockWidget QPushButton {
+        padding: 5px 10px 5px 10px;
+        border-radius: 10px;
+        color: #5F84A2;
+        background-color: #F0F0F0;
+        }
+    QDockWidget QPushButton::hover {
+        border: 2px solid #5F84A2;
+        }
+    #image_editor #image_label {
+        background-color: white;
+        }
+    #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
+        border: none; 
+        padding:10px; 
+        font-weight:700; 
+        border-radius: 5px;
+        } 
+    #input_data_button::hover, #common_input_button::hover, #image_management_button::hover, #land_data_button::hover, #export_button::hover, #extra_tools::hover {
+        color: #EAF6FF;
+        background-color: #0983C8;
+        } 
+    #input_data_button::checked, #common_input_button::checked, #image_management_button::checked, #land_data_button::checked, #export_button::checked, #extra_tools::checked {
+        color: #EAF6FF;
+        background-color: #1E4171;
+        }
+    #image-editor QMainWindow{
+        background: none;
+        }
