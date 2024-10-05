@@ -115,12 +115,12 @@ class MyDialog(QDialog):
 
         # DataFrame 생성
         pic_df = pd.DataFrame(data=list(zip(pic_file, lon_list, lat_list)), columns=['file', 'Lon', 'Lat'])
-        pic_df.dropna(inplace=True)
+        pic_df.dropna(inplace=True)  # GPS 정보가 없으면 제거
         if pic_df.empty:
-            print("Exif 정보가 없습니다.")
+            self.status_label.setText("Exif 정보가 없습니다.")
             return
         else:
-            print("이미지 DataFrame 생성 완료\n", pic_df)
+            self.status_label.setText("이미지 DataFrame 생성 완료")
 
         # 좌표 변환 및 거리 계산 처리
         # self.transform 함수를 벡터화
