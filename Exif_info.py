@@ -1,6 +1,7 @@
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 import piexif
+import os
 
 def get_exif_data(image_path:str) -> list:
     image = Image.open(image_path)
@@ -111,6 +112,7 @@ def update_image_gps_exif(image_path, lon=None, lat=None):
     """
     # 이미지 열기
     image = Image.open(image_path)
+    path, filename = os.path.split(image_path)
 
     # EXIF 데이터 읽기 (EXIF 데이터가 없을 수도 있으므로 try-except 사용)
     try:
@@ -135,14 +137,16 @@ def update_image_gps_exif(image_path, lon=None, lat=None):
     exif_bytes = piexif.dump(exif_dict)
 
     # EXIF 데이터를 포함하여 이미지 저장
-    updated_image_path = "updated_" + image_path
+    updated_image_path = os.path.join(path, "updated_" + filename)
     image.save(updated_image_path, exif=exif_bytes)
 
     print(f"GPS 정보가 수정된 이미지가 {updated_image_path}로 저장되었습니다.")
 
 
 if __name__ == "__main__":
-    image1 = 'updated__abcd.jpg'
+    image1 = 'Exif_info/202409041527070009.jpg'
+    image2 = 'Exif_info/202409041527190009.jpg'
+    image3 = 'Exif_info/202409041547290009.jpg'
     from coordinate_transform import CoordinateTransformer
     import webbrowser
 
@@ -160,11 +164,11 @@ if __name__ == "__main__":
     else:
         print("EXIF 데이터를 찾을 수 없습니다.")
 
-    url_kakao_form = "https://map.kakao.com/link/map/{0}, {2}, {1}"
-    webbrowser.open(url_kakao_form.format("test", lon, lat))
+    ### kakao map에서 확인
+    # url_kakao_form = "https://map.kakao.com/link/map/{0}, {2}, {1}"
+    # webbrowser.open(url_kakao_form.format("test", lon, lat))
 
-    # update_image_gps_exif(image1, 127.20566634311379, 37.2307377021482)
+    update_image_gps_exif(image1, 127.23821002720551, 37.23441623266602)
+    update_image_gps_exif(image2, 127.23755300291091, 37.233759159087214)
+    update_image_gps_exif(image3, 127.23739844115542, 37.23488910864183)
     
-
-
- 

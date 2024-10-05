@@ -7,6 +7,8 @@ from PIL import Image
 import PIL.ExifTags as ExifTags
 import numpy as np
 from coordinate_transform import CoordinateTransformer
+from geometric_search import find_id_within_linearbuffer, find_features_within_buffer, convert_to_geodataframe
+
 
 class MyDialog(QDialog):
     def __init__(self):
@@ -109,13 +111,23 @@ class MyDialog(QDialog):
                     else:
                         lon_list.append(None)
                         lat_list.append(None)
+                    img = None
 
         # DataFrame 생성
         pic_df = pd.DataFrame(data=list(zip(pic_file, lon_list, lat_list)), columns=['file', 'Lon', 'Lat'])
-        print("이미지 DataFrame 생성 완료:\n", pic_df)
+        pic_df.dropna(inplace=True)
+        if pic_df.empty:
+            print("Exif 정보가 없습니다.")
+            return
+        else:
+            print("이미지 DataFrame 생성 완료\n", pic_df)
 
         # 좌표 변환 및 거리 계산 처리
-        pic_df['XX'], pic_df['YY'] = self.transform(pic_df['Lon'], pic_df['Lat'])
+        # self.transform 함수를 벡터화
+        vectorized_transform = np.vectorize(self.transform)
+        pic_df['XX'], pic_df['YY'] = vectorized_transform(pic_df['Lon'], pic_df['Lat'])
+
+
         self.calculate_and_rename_files(pic_df)
 
     def extract_lat_lon(self, gps_info):
@@ -140,22 +152,31 @@ class MyDialog(QDialog):
     def calculate_and_rename_files(self, pic_df):
         # tr_df의 (X, Y)와 pic_df의 (XX, YY) 사이의 거리를 계산 후 이름 변경
         for idx, tr_row in self.tr_df.iterrows():
-            tr_x, tr_y = tr_row['X'], tr_row['Y']
+            tr_point = tr_row['X'], tr_row['Y']
+
+            # DataFrame을 GeoDataFrame으로 변환
+            pic_gdf = convert_to_geodataframe(pic_df)
+
+            # 버퍼 범위내의 이미지 추출
+            selected_gdf = find_features_within_buffer(pic_gdf, tr_point, 30)
             
-            # 거리 계산 (유클리드 거리)
-            pic_df['distance'] = np.sqrt((pic_df['XX'] - tr_x) ** 2 + (pic_df['YY'] - tr_y) ** 2)
+            if not selected_gdf is None:
+                new_gdf= selected_gdf.copy()
+                # 거리 계산 (유클리드 거리)
+                new_gdf['distance'] = np.sqrt((new_gdf['XX'] - tr_point[0]) ** 2 + (new_gdf['YY'] - tr_point[1]) ** 2)
 
-            # 가장 가까운 파일 찾기
-            closest_pic = pic_df.loc[pic_df['distance'].idxmin()]
+                # 가장 가까운 파일 찾기
+                closest_pic = new_gdf.loc[new_gdf['distance'].idxmin()]
 
-            # 파일 이름을 점번호로 변경
-            old_name = os.path.join(self.pic_path, closest_pic['file'])
-            new_name = os.path.join(self.pic_path, str(tr_row['점번호']) + os.path.splitext(closest_pic['file'])[1])
-            os.rename(old_name, new_name)
-            print(f"파일 이름 변경: {old_name} -> {new_name}")
+                # 파일 이름을 점번호로 변경
+                old_name = os.path.join(self.pic_path, closest_pic['file'])
+                new_name = os.path.join(self.pic_path, str(tr_row['Point']) + os.path.splitext(closest_pic['file'])[1])
+                os.rename(old_name, new_name)
+                print(f"파일 이름 변경: {old_name} -> {new_name}")
 
-            # DataFrame에서 해당 파일 삭제
-            pic_df = pic_df.drop(closest_pic.name)
+                # DataFrame에서 해당 파일 삭제
+                pic_df = pic_df[pic_df.index != closest_pic.name]
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

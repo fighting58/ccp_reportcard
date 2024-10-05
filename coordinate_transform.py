@@ -66,9 +66,10 @@ if __name__ == "__main__":
 
     longitude = 127.2013584  # 예시 경도
     latitude = 37.2323391   # 예시 위도
-    iy = 217868.57602140884
-    ix = 514816.90504424967 
+    ix = 515107.32 
+    iy = 221066.07
     x, y = transformer(lon=longitude, lat=latitude)
     print(f"변환된 좌표: x={x}, y={y}")
     x, y = transformer(x=ix, y=iy)
     print(f"변환된 좌표: lon={x}, lat={y}")
+

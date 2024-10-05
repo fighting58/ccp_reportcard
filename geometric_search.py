@@ -4,7 +4,7 @@ from shapely.geometry import Point, LineString
 from shapely.affinity import translate
 import numpy as np
 
-def find_id_within_linearbuffer(gdf:gpd.GeoDataFrame, tp:tuple, angle:float, distance:float, buf:float) -> list:
+def find_id_within_linearbuffer(gdf:gpd.GeoDataFrame, tp:tuple, angle:float, distance:float, buf:float) -> gpd.GeoDataFrame:
     """
     주어진 점 P, 방위각 A, 거리 d, 버퍼 buf를 사용하여
     버퍼 내에 있는 점들을 선택하는 함수.
@@ -32,7 +32,48 @@ def find_id_within_linearbuffer(gdf:gpd.GeoDataFrame, tp:tuple, angle:float, dis
     # 버퍼 내에 있는 점 선택
     selected_points = gdf[gdf.geometry.within(buffer)]
     if not selected_points.empty:
-        return selected_points['ID'].tolist()
+        return selected_points
+    else:
+        return None
+    
+def convert_to_geodataframe(df: pd.DataFrame, x_col: str='XX', y_col: str='YY') -> gpd.GeoDataFrame:
+        """
+        DataFrame 포인트 타입 GeoDataFrame으로 변환
+        
+        Parameters:
+        df (DataFrame): 변환에 필요한 DataFrame
+        x_col (str): x좌표가 들어있는 df의 컬럼명
+        y_col (str): y좌표가 들어있는 df의 컬럼명
+
+        """
+        # 'XX'와 'YY' 열을 사용하여 Point 객체 생성
+        geometry = [Point(xy) for xy in zip(df[x_col], df[y_col])]
+        
+        # GeoDataFrame 생성
+        gdf = gpd.GeoDataFrame(df, geometry=geometry)
+        
+        return gdf
+    
+def find_features_within_buffer(gdf:gpd.GeoDataFrame, tp:tuple, buf:float) -> gpd.GeoDataFrame:
+    """
+    주어진 점 P, 방위각 A, 거리 d, 버퍼 buf를 사용하여
+    버퍼 내에 있는 점들을 선택하는 함수.
+
+    Parameters:
+    gdf (GeoDataFrame): 점들이 포함된 GeoDataFrame
+    tp (Point): 기준 점
+    buf (float): 버퍼 크기
+
+    Returns:
+    GeoDataFrame: 버퍼 내에 있는 점들
+    """
+    tp = Point(tp) 
+    buffer = tp.buffer(buf, 16)  # tp주변, 16각형(default:8)
+
+    # 버퍼 내에 있는 점 선택
+    selected_points = gdf[gdf.geometry.within(buffer)]
+    if not selected_points.empty:
+        return selected_points
     else:
         return None
 
