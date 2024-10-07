@@ -2,23 +2,10 @@
 #==========================================
 import sys
 import os
-import geopandas as gpd
-import pandas as pd
-from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, QPushButton, QLineEdit, QInputDialog, QSlider,
-                                QRadioButton, QTableWidget, QToolBar, QComboBox, QButtonGroup, QStyledItemDelegate, QMenu,
-                                QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QAbstractItemDelegate, QFrame, QColorDialog,
-                                QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, QSizePolicy, QAbstractItemView)
-from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize, QRectF, QSizeF, QPointF
-from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QPixmap, QFont, QKeyEvent, QFontDatabase, QMouseEvent, QCursor
-import icons_rc
-import pickle   
-from geometric_search import find_id_within_linearbuffer, find_attributes_containing_point
-from shp2report import ReportFromDataframe
-from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL
-from cif_converter import CifGeoDataFrame
-import pickle
-from CodeDownload_codegokr import CodeGoKr
-
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, QPushButton, QInputDialog, QSlider,
+                                QToolBar, QComboBox, QMenu, QLabel, QColorDialog, QVBoxLayout, QHBoxLayout)
+from PySide6.QtCore import Qt, Signal,Slot, QSize, QRectF, QSizeF, QPointF
+from PySide6.QtGui import QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QPixmap, QFont, QKeyEvent, QFontDatabase, QMouseEvent, QCursor
 
 class CustomCursor(QCursor):
     def __init__(self):
@@ -256,16 +243,25 @@ class ImageEditor(QMainWindow):
     def new_document(self):
         self.layers = []
         self.current_layer = None
+        self.current_image = None
         self.table_row = None
+        self.update_image()
 
     def on_request_update(self):
+        print(self.table_row)
         if not self.table_row is None:
-            path, _ = os.path.split(self.current_image)
-            new_path = path + '/거리입력' 
+            # self.target_image가 None이면 self.current_image를 사용
+            if self.target_image is None:
+                path = self.current_image
+            # target_image가 파일형식인 경우 디렉토리 경로만 사용, 아니면 전체를 경로로 사용
+            path = self.target_image if os.path.isdir(self.target_image) else os.path.split(self.target_image)[0]
+            print(path)
+            # 새로운 경로 지정
+            new_path = path if path.endswith('_거리입력_') else path + '/_거리입력_'
             new_filename = f"{self.table_row[1]}_edit.png"   # 파일명을 "{도근번호}_edit"으로 설정하고 png형식으로 저장
             if not os.path.exists(new_path):
                 os.mkdir(new_path)        # 거리입력 디렉토리 생성
-            self.image_label.pixmap().save(os.path.join(new_path, new_filename), quality=50)
+            self.image_label.pixmap().save(os.path.join(new_path, new_filename), quality=100)
             self.table_update_request.emit(self.table_row[0], new_path, new_filename)
 
     def delete_selected_items(self):
@@ -322,22 +318,23 @@ class ImageEditor(QMainWindow):
 
     def open_image(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "이미지 열기", "", "이미지 파일 (*.png *.jpg *.bmp *.jpeg)")
-        self.current_image = file_name
         if file_name:
-            pixmap = QPixmap(file_name)
+            self.current_image = file_name
+            pixmap = QPixmap(self.current_image)
             scaled_pixmap = self.scale_pixmap(pixmap)
-            self.add_layer(scaled_pixmap)
-        self.resize_pixmap()
+            self.add_layer(scaled_pixmap)        
+            self.resize_pixmap()
 
-    @Slot(str)
     def open_image_from(self, file_name):
-        self.current_image = file_name
-        self.new_document()        
-        if os.path.isfile(file_name):
+        self.layers=[]
+        self.target_image = file_name
+        if os.path.exists(file_name) and os.path.isfile(file_name):
             pixmap = QPixmap(file_name)
-            scaled_pixmap = self.scale_pixmap(pixmap)
-            self.add_layer(scaled_pixmap)
-        # self.resize_pixmap()
+        else:
+            pixmap = QPixmap(*self.IMAGE_SIZE)
+            pixmap.fill(Qt.white)
+        scaled_pixmap = self.scale_pixmap(pixmap)
+        self.add_layer(scaled_pixmap)
     
     def save_image(self, filename=None):
         if not self.layers:
@@ -431,14 +428,14 @@ class ImageEditor(QMainWindow):
             new_width = int(new_height * 4 / 3)
         # 레이블 크기 재조정        
         self.setMaximumSize(QSize(new_width, new_height))
-        self.IMAGE_SIZE = (int(self.image_label.parent().size().width() * 0.97), int(self.image_label.parent().size().height()*0.97))
+        self.IMAGE_SIZE = (int(new_width * 0.98), int(new_height * 0.98))
         self.image_label.setMaximumSize(*self.IMAGE_SIZE)
 
         if self.layers:
-            self.open_image_from(self.current_image)
+            self.open_image_from(self.current_image) 
 
     def resizeEvent(self, event):
-        self.image_label.setMinimumSize(int(self.IMAGE_SIZE[0] *0.1), int(self.IMAGE_SIZE[1]*0.1))
+        self.image_label.setMinimumSize(400, 300)
         self.resize_pixmap()
         super().resizeEvent(event)  
 
@@ -579,12 +576,11 @@ class ImageEditor(QMainWindow):
         self.image_label.setPixmap(result)
 
     def update_image(self):
-        if not self.layers:
-            self.initialize_pixmap()
-            return
-        
         result = QPixmap(*self.IMAGE_SIZE)
         result.fill(Qt.transparent)
+        if not self.layers:
+            self.image_label.setPixmap(result)
+            return
         painter = QPainter(result)
         
         for layer in self.layers[::-1]:
@@ -650,13 +646,11 @@ class ImageEditor(QMainWindow):
                 if text_item.rect and text_item.rect.contains(pos):
                     self.image_label.setCursor(Qt.SizeAllCursor)
                     return
-        
-        
 
     def is_near_vertex(self, point, vertex, threshold=5):
         return (point - vertex).manhattanLength() < threshold
 
-class QCcpManager(QMainWindow):
+class TestManager(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setupUI()
@@ -678,8 +672,7 @@ class QCcpManager(QMainWindow):
         layout.addWidget(self.image_editor)
 
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ex = QCcpManager()
+    ex = TestManager()
     sys.exit(app.exec())

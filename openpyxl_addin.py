@@ -1,5 +1,5 @@
 import openpyxl
-from openpyxl.styles import Border, Side, Font, Alignment
+from openpyxl.styles import Border, Side, Alignment
 from openpyxl.worksheet.cell_range import CellRange
 from openpyxl.drawing.image import Image
 from openpyxl.utils.units import pixels_to_EMU, cm_to_EMU, EMU_to_pixels, EMU_to_cm, pixels_to_points, inch_to_EMU
@@ -8,8 +8,6 @@ from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.utils.cell import get_column_letter, column_index_from_string, coordinate_from_string, range_boundaries
 from openpyxl.worksheet.dimensions import ColumnDimension, DimensionHolder
 from copy import copy
-from PIL import Image as PILImage
-import pandas as pd
 import ctypes
 import shutil
 import numpy as np

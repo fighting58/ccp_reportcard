@@ -3,14 +3,14 @@ import os
 import geopandas as gpd
 import pandas as pd
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, QPushButton, QLineEdit,
-                                QRadioButton, QTableWidget, QToolBar, QComboBox, QButtonGroup, QStyledItemDelegate,
-                                QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QAbstractItemDelegate, QFrame, 
+                                QRadioButton, QTableWidget, QToolBar, QButtonGroup, QStyledItemDelegate,
+                                QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, 
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, QSizePolicy, QAbstractItemView)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
 import icons_rc
 import pickle   
-from geometric_search import find_id_within_linearbuffer, find_attributes_containing_point
+from geometric_search import find_attributes_containing_point
 from shp2report import ReportFromDataframe
 from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL
 from cif_converter import CifGeoDataFrame
@@ -18,6 +18,7 @@ import pickle
 from pathlib import Path
 from CodeDownload_codegokr import CodeGoKr
 from custom_image_editor import ImageEditor
+from rename_image_with_tr import DialogRenameImage
 
 class CustomToggleButton(QWidget):
     stateChanged = Signal(bool)  # 상태 변경 시그널
@@ -287,7 +288,7 @@ class AutoResizeDelegate(QStyledItemDelegate):
 
         return base_size
 
-class QCcpManager(QMainWindow):
+class CcpManager(QMainWindow):
 
     HEADER_LABELS = ['점번호', 'X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', 
                       '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', 
@@ -296,10 +297,11 @@ class QCcpManager(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.image_folder = None
-        self.image_extension = ".jpg"
-        self.is_same_name = False
-        self.mode = "edit-table"   # ['edit-table', 'edit-image']
+        self._image_folder = None        # 그림파일 폴더
+        self.image_extension = ".jpg"   # 그림파일 디폴트 확장자
+        self.is_same_name = False       # 도근번호와 그림파일명이 같은가?
+        self.mode = "edit-table"        # 모드 ['edit-table', 'edit-image']
+        self.tr = None                  # tr.dat 파일 경로
         self.add_toolbar()
         self.setupUi()
         self.showMaximized()
@@ -528,10 +530,13 @@ class QCcpManager(QMainWindow):
         side_layout.addLayout(vlayout_extra)
         side_layout.setSpacing(30)
 
+        # 버튼그룹 내의 버튼은 하나만 선택할 수 있게
         self.button_group.setExclusive(True)
         side_container.setLayout(side_layout)
+
         self.sidemenu = self.add_dockableWidget("테이블 입력", side_container, 800)
 
+        # 시그널-슬롯 연결
         self.input_data_button.toggled.connect(input_data_sub.setVisible)
         self.common_input_button.toggled.connect(common_input_sub.setVisible)
         self.image_management_button.toggled.connect(image_management_sub.setVisible)
@@ -604,12 +609,20 @@ class QCcpManager(QMainWindow):
         self.status_message.setText(' '.join([num, orginal_image]))
         self.image_editor.open_image_from(orginal_image)
         self.image_editor.table_row = (row, num)
+        self.image_editor.update_image()
 
     @Slot(int, str, str)
     def on_table_update_request(self, row, path, filename):
         self.table_widget.setCellItemAligned(row, self._headerindex("사진파일(경로)"), path)
         self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), filename)
 
+    @property
+    def image_folder(self): 
+        return self._image_folder
+
+    @image_folder.setter
+    def image_folder(self, folder):
+        self._image_folder = folder
 
     def alignAllCellsCenter(self):
         for row in range(self.table_widget.rowCount()):
@@ -779,6 +792,7 @@ class QCcpManager(QMainWindow):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getOpenFileName(self, "Open TR.DAT File", "", "DAT Files (*.dat);;All Files (*)", options=options)
         if fileName:
+            self.tr = fileName
             self.loadDataToTable(fileName)
             self.status_message.setText(f"파일이 성공적으로 로드되었습니다: {fileName}")
 
@@ -952,7 +966,10 @@ class QCcpManager(QMainWindow):
             self.status_message.setText(f'Code 업데이트 완료...{db}')
 
     def on_classify_image(self):
-        pass
+        dialog = DialogRenameImage()
+        if not self.tr is None:
+            dialog.tr = self.tr
+        dialog.exec()
 
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
@@ -960,6 +977,6 @@ class QCcpManager(QMainWindow):
 
 if __name__ == "__main__":
     app=QApplication(sys.argv)
-    ex = QCcpManager()
+    ex = CcpManager()
     ex.setStyleSheet(Path('main_ui.qss').read_text(encoding='utf-8'))
     sys.exit(app.exec())

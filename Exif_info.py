@@ -1,6 +1,7 @@
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 import piexif
+import webbrowser
 import os
 
 def get_exif_data(image_path:str) -> list:
@@ -31,11 +32,11 @@ def get_gps_info(image_path: str) -> tuple:
     return: (tuple) (lon, lat, direction)반환
     """
     exif_info = get_exif_data(image_path)
-    lon, lat = get_gps_position(exif_info)
-    direction = get_gps_direction(exif_info)
+    lon, lat = _get_gps_position(exif_info)
+    direction = _get_gps_direction(exif_info)
     return lon, lat, direction
 
-def get_gps_position(exif_data:list) -> tuple:
+def _get_gps_position(exif_data:list) -> tuple:
     """
     exif_data로부터 (lon, lat)튜플형태의 좌표를 반환
     (튜플의 각 원소의 단위는 degree)
@@ -46,9 +47,9 @@ def get_gps_position(exif_data:list) -> tuple:
 
     if lon and lat:               # lon, lat tag가 있으면 
         return dms2degree(lon), dms2degree(lat)        
-    return None
+    return None, None
 
-def get_gps_direction(exif_data:list) -> tuple:
+def _get_gps_direction(exif_data:list) -> tuple:
     """
     exif_data로부터 방위각을 반환(단위 degree)
     """
@@ -98,7 +99,7 @@ def degree_to_dms_piexif(degree):
     d, m, s = degree2dms(degree)
     
     # GPS 정보는 (정수, 분모) 형식으로 표현되므로 (초는 100을 곱해 분수로 만듦)
-    return ((d, 1), (m, 1), (int(s * 10000000), 10000000))
+    return ((d, 1), (m, 1), (int(s * 10000000000), 10000000000))  # 삼성(10000000)
 
 # EXIF를 수정하는 함수
 def update_image_gps_exif(image_path, lon=None, lat=None):
@@ -141,6 +142,18 @@ def update_image_gps_exif(image_path, lon=None, lat=None):
     image.save(updated_image_path, exif=exif_bytes)
 
     print(f"GPS 정보가 수정된 이미지가 {updated_image_path}로 저장되었습니다.")
+
+def show_on_kakao(tag:str, lon:float, lat:float) -> None:
+    """
+    kakao map에서 위치 확인
+    
+    param:
+        tag (str): 위치에 대한 설명
+        lon (float): 경도
+        lat (float): 위도
+    """
+    url_kakao_form = "https://map.kakao.com/link/map/{0}, {2}, {1}"
+    webbrowser.open(url_kakao_form.format(tag, lon, lat))
 
 
 if __name__ == "__main__":

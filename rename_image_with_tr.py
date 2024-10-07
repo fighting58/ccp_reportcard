@@ -1,57 +1,83 @@
 import sys
 import os
 import pandas as pd
-from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QFileDialog, QLabel
+from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QFileDialog, QLabel, QGridLayout
 from PySide6.QtCore import Qt
-from PIL import Image
-import PIL.ExifTags as ExifTags
 import numpy as np
 from coordinate_transform import CoordinateTransformer
-from geometric_search import find_id_within_linearbuffer, find_features_within_buffer, convert_to_geodataframe
+from geometric_search import find_features_within_buffer, convert_to_geodataframe
+from Exif_info import get_gps_info
 
-
-class MyDialog(QDialog):
+class DialogRenameImage(QDialog):
     def __init__(self):
         super().__init__()
 
         self.tr_df = None  # tr.dat DataFrame
         self.pic_path = None  # 이미지 폴더 경로
+        self._tr = None     # tr.dat 파일 경로
 
-        self.setWindowTitle("EXIF 정보 처리 다이얼로그")
-        self.setGeometry(100, 100, 400, 200)
+        self.setWindowTitle("TR 점번호로 이미지명 변경")
+        self.setGeometry(100, 100, 600, 200)
 
         # 레이아웃 설정
-        layout = QVBoxLayout()
+        layout = QGridLayout()
 
         # tr.dat 버튼 생성
-        self.tr_button = QPushButton("tr.dat 파일 불러오기")
+        self.tr_button = QPushButton("tr.dat 파일 입력")
+        self.tr_button.setFixedWidth(120)
         self.tr_button.clicked.connect(self.load_tr_dat)
-        layout.addWidget(self.tr_button)
+        layout.addWidget(self.tr_button, 0, 0, 1, 1)
+
+        self.tr_label = QLabel("tr.dat가 아직 입력되지 않았습니다.")
+        layout.addWidget(self.tr_label, 1, 0, 1, 3)
 
         # Pictures 버튼 생성
         self.pictures_button = QPushButton("이미지 폴더 선택")
+        self.pictures_button.setFixedWidth(120)
         self.pictures_button.clicked.connect(self.load_pictures_folder)
-        layout.addWidget(self.pictures_button)
+        layout.addWidget(self.pictures_button, 2, 0, 1, 1)
+
+        self.pictures_label = QLabel("사진 폴더가 아직 선택되지 않았습니다.")
+        layout.addWidget(self.pictures_label, 3, 0, 1, 3)
 
         # 실행 버튼 생성
         self.run_button = QPushButton("실행")
+        self.run_button.setFixedWidth(120)
         self.run_button.clicked.connect(self.run_process)
-        layout.addWidget(self.run_button)
+        layout.addWidget(self.run_button, 4, 2, 1, 1)
 
         # 상태 표시 레이블
         self.status_label = QLabel("Status: Ready")
-        layout.addWidget(self.status_label)
+        layout.addWidget(self.status_label, 5, 0, 1, 3)
 
         self.setLayout(layout)
 
+    @property
+    def tr(self):
+        return self._tr
+
+    @tr.setter
+    def tr(self, tr):
+        self._tr = tr
+        self.tr_label.setText(f"{tr}")
+
+    def get_tr_dat(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open tr.dat", "", "Data Files (*.dat)")
+        if file_path:
+            self.tr = file_path
+            return file_path
+        return None
 
     def load_tr_dat(self):
-        # QFileDialog를 통해 tr.dat 파일 선택
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open tr.dat", "", "Data Files (*.dat)")
-        NUM, X, Y = [], [], [] 
-        if file_path:
+        tr_dat = self.tr
+        if tr_dat is None:
+            tr_dat = self.get_tr_dat()
+        
+        NUM, X, Y = [], [], []
+        
+        if tr_dat:
             try:
-                with open(file_path, 'r') as f:
+                with open(tr_dat, 'r') as f:
                     lines = f.readlines()
                     for line in lines:
                         line = line.replace('\t', ' ')
@@ -65,15 +91,17 @@ class MyDialog(QDialog):
                         X.append(int(x)/100)
                         Y.append(int(y)/100)
                 self.tr_df = pd.DataFrame(data=list(zip(NUM, X, Y)), columns=["Point", "X", "Y"])
-                self.status_label.setText(f"Loaded tr.dat: {file_path}")
                 print(self.tr_df)
             except Exception as e:
                 self.status_label.setText(f"Failed to load tr.dat: {e}")
+        else:
+            self.status_label.setText(f"tr.dat 파일을 선택해주세요.")
 
     def load_pictures_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "이미지 폴더 선택")
         if folder:
             self.pic_path = folder
+            self.pictures_label.setText(f"{folder}")
             print("이미지 폴더 선택 완료:", self.pic_path)
 
     def run_process(self):
@@ -93,25 +121,9 @@ class MyDialog(QDialog):
                     pic_file.append(file)
                     
                     # EXIF 정보 추출
-                    img = Image.open(file_path)
-                    exif_data = img._getexif()
-                    if exif_data:
-                        gps_info = {
-                            ExifTags.TAGS.get(tag): exif_data[tag]
-                            for tag in exif_data
-                            if tag in ExifTags.TAGS and ExifTags.TAGS[tag] == "GPSInfo"
-                        }
-                        if gps_info:
-                            lat, lon = self.extract_lat_lon(gps_info.get('GPSInfo', {}))
-                            lon_list.append(lon)
-                            lat_list.append(lat)
-                        else:
-                            lon_list.append(None)
-                            lat_list.append(None)
-                    else:
-                        lon_list.append(None)
-                        lat_list.append(None)
-                    img = None
+                    lon, lat, _ = get_gps_info(file_path)
+                    lon_list.append(lon)
+                    lat_list.append(lat)
 
         # DataFrame 생성
         pic_df = pd.DataFrame(data=list(zip(pic_file, lon_list, lat_list)), columns=['file', 'Lon', 'Lat'])
@@ -127,21 +139,7 @@ class MyDialog(QDialog):
         vectorized_transform = np.vectorize(self.transform)
         pic_df['XX'], pic_df['YY'] = vectorized_transform(pic_df['Lon'], pic_df['Lat'])
 
-
         self.calculate_and_rename_files(pic_df)
-
-    def extract_lat_lon(self, gps_info):
-        # GPS 정보에서 위도, 경도 추출
-        def convert_to_degrees(value):
-            d = float(value[0])
-            m = float(value[1]) / 60.0
-            s = float(value[2]) / 3600.0
-            return d + m + s
-
-        lat = convert_to_degrees(gps_info.get(2, (0, 0, 0)))
-        lon = convert_to_degrees(gps_info.get(4, (0, 0, 0)))
-        
-        return lat, lon
 
     def transform(self, lon, lat):
         # 경도, 위도를 직교 좌표로 변환
@@ -180,42 +178,7 @@ class MyDialog(QDialog):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    dialog = MyDialog()
+    dialog = DialogRenameImage()
     dialog.show()
     sys.exit(app.exec())
 
-    """
-    
-    
-    Pyside6 라이브러리를 이용해서 다이얼로그를 만들려고 해.
-  1. tr.dat 버튼
-    - tr.dat 파일 불러오기, QFileDialog    
-    - tr.dat를 pandas dataframe으로 변환
-    - tr.dat파일: 점번호, X좌표, Y좌표로 구성된 값을 가지며 tab으로 구분
-    - tr_df 변수에 저장
-  2. Pictures 버튼
-    - 이미지 폴더 불러오기
-    - pic_path 변수에 저장
-  3. 실행 버튼
-    - pic_path 내에 존재하는 이미지 파일들에 대해 다음 리스트를 생성 후 DataFrame으로 변환
-      - pic_file: filename list
-      - lon_list: 이미지 파일의 exif 정보 중 longitude
-      - lat_list: 이미지 파일의 exif 정보 중 latitude
-    - pic_df = pd.DataFrame(data=list(zip(pic_file, lon_list, lat_list)), columns=['file', 'Lon', 'Lat'])
-    - pic_df의 Lon, Lat 을 transform() 변환함수를 통해 직교좌표 XX, YY로 변환 
-    - tr_df의 (X, Y)와 pic_df의 (XX, YY) 사이의 거리를 구해 가장 가까운 pic_df의 file을 이름을 tr_df의 점번호로 변경(os.rename(file, 점번호))하고 pic_df에서 drop
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    """

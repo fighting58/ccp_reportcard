@@ -16,7 +16,6 @@ from shp2report import ReportFromDataframe
 from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL
 from cif_converter import CifGeoDataFrame
 import pickle
-from CodeDownload_codegokr import CodeGoKr
 
 
 class AutoResizeDelegate(QStyledItemDelegate):
