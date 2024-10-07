@@ -84,6 +84,7 @@ class ImageEditor(QMainWindow):
         self.table_row = None
         self.custom_cursor = CustomCursor()
         self.initUI()
+        self.setGeometry(100, 100, 800, 600)
 
     def initUI(self):       
         self.add_toolbar("Main Toolbar")
@@ -100,11 +101,13 @@ class ImageEditor(QMainWindow):
         self.image_label.mouseDoubleClickEvent = self.mouseDoubleClickEvent
         self.image_label.mouseReleaseEvent = self.mouseReleaseEvent
 
-        main_widget = QWidget(self)
-        layout = QHBoxLayout(main_widget)
+        self.main_widget = QWidget(self)
+        layout = QHBoxLayout(self.main_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
         layout.addWidget(self.image_label)
 
-        self.setCentralWidget(main_widget)        
+        self.setCentralWidget(self.main_widget)        
 
         # 키 이벤트를 처리하기 위해 포커스 정책 설정
         self.setFocusPolicy(Qt.StrongFocus)
@@ -232,9 +235,9 @@ class ImageEditor(QMainWindow):
 
         # Toolbar2
         self.toolbar2 = QToolBar("Apply Image Toolbar")
-        self.addToolBar(Qt.RightToolBarArea, self.toolbar2)
+        self.addToolBar(Qt.TopToolBarArea, self.toolbar2)
 
-        self.image_apply_button = QPushButton("Save \n && \n apply", self.toolbar2)
+        self.image_apply_button = QPushButton("Save && apply", self.toolbar2)
         self.image_apply_button.setShortcut(QKeySequence("Ctrl+Return"))
         self.image_apply_button.clicked.connect(self.on_request_update)
         self.toolbar2.addWidget(self.image_apply_button)
@@ -248,7 +251,6 @@ class ImageEditor(QMainWindow):
         self.update_image()
 
     def on_request_update(self):
-        print(self.table_row)
         if not self.table_row is None:
             # self.target_image가 None이면 self.current_image를 사용
             if self.target_image is None:
@@ -261,7 +263,8 @@ class ImageEditor(QMainWindow):
             new_filename = f"{self.table_row[1]}_edit.png"   # 파일명을 "{도근번호}_edit"으로 설정하고 png형식으로 저장
             if not os.path.exists(new_path):
                 os.mkdir(new_path)        # 거리입력 디렉토리 생성
-            self.image_label.pixmap().save(os.path.join(new_path, new_filename), quality=100)
+            # 이미지 저장
+            self.save_image(filename=os.path.join(new_path, new_filename), quality=100)
             self.table_update_request.emit(self.table_row[0], new_path, new_filename)
 
     def delete_selected_items(self):
@@ -336,19 +339,21 @@ class ImageEditor(QMainWindow):
         scaled_pixmap = self.scale_pixmap(pixmap)
         self.add_layer(scaled_pixmap)
     
-    def save_image(self, filename=None):
+    def save_image(self, filename=None, quality=50):
         if not self.layers:
             return
         self.unselect()
+        self.update_image()
         if filename is None:
-            file_name, _ = QFileDialog.getSaveFileName(self, "이미지 저장", "", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
+            filename, _ = QFileDialog.getSaveFileName(self, "이미지 저장", "", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
 
         if filename:
-            self.image_label.pixmap().save(file_name, quality=50)
+            self.image_label.pixmap().save(filename, quality=quality)
 
     def scale_pixmap(self, pixmap, size=None):
         if size is None:
-            return pixmap.scaled(self.parent().size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            print("label size:", self.image_label.size())
+            return pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         return pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
     def get_korean_fonts(self):
@@ -417,25 +422,24 @@ class ImageEditor(QMainWindow):
             self.layers.insert(to_index, item)
 
     def resize_pixmap(self):
-        parent_size = self.parent().size()
+        main_widget_size = self.main_widget.size()
         # 가로 크기에 따라 세로 크기를 4:3 비율로 설정
-        new_width = parent_size.width()
+        new_width = main_widget_size.width() 
         new_height = int(new_width * 3 / 4)
 
         # 부모 위젯의 세로 크기보다 계산된 세로 크기가 클 경우
-        if new_height > parent_size.height():
-            new_height = parent_size.height()
+        if new_height > main_widget_size.height():
+            new_height = main_widget_size.height()
             new_width = int(new_height * 4 / 3)
         # 레이블 크기 재조정        
-        self.setMaximumSize(QSize(new_width, new_height))
         self.IMAGE_SIZE = (int(new_width * 0.98), int(new_height * 0.98))
-        self.image_label.setMaximumSize(*self.IMAGE_SIZE)
+        self.image_label.setFixedSize(*self.IMAGE_SIZE)
 
         if self.layers:
             self.open_image_from(self.current_image) 
 
+
     def resizeEvent(self, event):
-        self.image_label.setMinimumSize(400, 300)
         self.resize_pixmap()
         super().resizeEvent(event)  
 

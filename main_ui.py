@@ -566,7 +566,9 @@ class CcpManager(QMainWindow):
 
         ## image editor widget
         self.image_editor_frame = QFrame(self)
+        self.image_editor_frame.setObjectName("image_editor_frame")
         image_editor_frame_layout = QHBoxLayout()
+        image_editor_frame_layout.setContentsMargins(0,0,0,0)
         self.image_editor = ImageEditor(self.image_editor_frame)
         self.image_editor.setObjectName("image_editor")
         self.image_editor.setAttribute(Qt.WA_TranslucentBackground)
@@ -686,7 +688,7 @@ class CcpManager(QMainWindow):
             self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
             table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
             self.table_widget.setFixedWidth(table_size+5)
-
+            
     def add_toolbar(self):
         self.toolbar = QToolBar()
         self.toolbar.setWindowTitle('MainToolbar')
@@ -973,6 +975,30 @@ class CcpManager(QMainWindow):
 
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
+    
+    # def resizeEvent(self, event):
+    #     super().resizeEvent(event)
+    #     self.adjustImageEditorSize()
+
+
+    # def adjustImageEditorSize(self):
+    #     """이미지 에디터와 image_label의 크기를 조정하되 4:3 비율을 유지"""
+    #     editor_width = self.image_editor_frame.width()
+    #     editor_height = self.image_editor_frame.height()
+
+    #     # 현재 메인 프레임의 크기를 기준으로 적절한 4:3 크기 계산
+    #     new_width = editor_width
+    #     new_height = int(new_width * 3 / 4)  # 4:3 비율 유지
+
+    #     if new_height > editor_height:
+    #         # 높이가 초과되면, 높이를 기준으로 다시 4:3 비율로 가로 크기 재조정
+    #         new_height = editor_height
+    #         new_width = int(new_height * 4 / 3)
+
+    #     # 크기를 4:3 비율로 설정
+    #     self.image_editor.main_widget.setMaximumSize(int(new_width*0.95), int(new_height*0.95))
+
+
 
 
 if __name__ == "__main__":
