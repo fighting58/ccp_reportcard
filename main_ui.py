@@ -19,7 +19,6 @@ from pathlib import Path
 from CodeDownload_codegokr import CodeGoKr
 from custom_image_editor import ImageEditor
 from rename_image_with_tr import DialogRenameImage
-import time
 
 class CustomToggleButton(QWidget):
     stateChanged = Signal(bool)  # 상태 변경 시그널
@@ -302,12 +301,13 @@ class CcpManager(QMainWindow):
         self.image_extension = ".jpg"   # 그림파일 디폴트 확장자
         self.is_same_name = False       # 도근번호와 그림파일명이 같은가?
         self.mode = "edit-table"        # 모드 ['edit-table', 'edit-image']
+        self.__width = None
         self.tr = None                  # tr.dat 파일 경로
         self.add_toolbar()
         self.setupUi()
         self.showMaximized()
         # self.add_menubar()
-        
+    
         self.show()
 
     def setupUi(self):
@@ -545,8 +545,9 @@ class CcpManager(QMainWindow):
 
         # 버튼그룹 내의 버튼은 하나만 선택할 수 있게
         self.button_group.setExclusive(True)  
-        self.sidemenu = self.add_dockableWidget("테이블 편집", side_container, 800)
-
+        self.sidemenu = self.add_dockableWidget("테이블 편집", side_container)
+        self.sidemenu.setMinimumSize(200, 800)
+     
         # 시그널-슬롯 연결
         self.input_data_button.toggled.connect(input_data_sub.setVisible)
         self.common_input_button.toggled.connect(common_input_sub.setVisible)
@@ -577,13 +578,13 @@ class CcpManager(QMainWindow):
         self.table_widget.verticalHeader().hide()
         vlayout2.addWidget(temp_label1)
 
-        # table 위젯을 스크롤영역으로 감싸기
-        self.scroll_widget = self.create_scrollable_widget(self.table_widget)
-        self.scroll_widget.setObjectName("scroll_widget")
-        self.scroll_widget.setAttribute(Qt.WA_TranslucentBackground)
-        self.scroll_widget.viewport().setAutoFillBackground(False)
-        # self.scroll_widget.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding))
-        vlayout2.addWidget(self.scroll_widget)
+        # # table 위젯을 스크롤영역으로 감싸기
+        # self.scroll_widget = self.create_scrollable_widget(self.table_widget)
+        # self.scroll_widget.setObjectName("scroll_widget")
+        # self.scroll_widget.setAttribute(Qt.WA_TranslucentBackground)
+        # self.scroll_widget.viewport().setAutoFillBackground(False)
+        self.table_widget.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
+        vlayout2.addWidget(self.table_widget)
  
         # AutoResizeDelegate 설정
         delegate = AutoResizeDelegate(self.table_widget)
@@ -592,7 +593,6 @@ class CcpManager(QMainWindow):
         self.alignAllCellsCenter()
         self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("토지소재(동리)"), 200)
         self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
-        self._scrollwidget_width = self.scroll_widget.width()
 
         ## image editor widget
         self.image_editor_frame = QFrame(self)
@@ -694,27 +694,22 @@ class CcpManager(QMainWindow):
 
     def change_mode(self):
         self.table_widget.set_mode = self.change_mode_toggle.isChecked()
-        self.table_widget.clearSelection()
-        
+        self.table_widget.clearSelection()        
         if self.change_mode_toggle.isChecked():
-            print(self._scrollwidget_width)
             self.mode = "edit-table"
             self.image_editor_frame.hide()
             self.sidemenu.show()
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectItems)
             self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
-            self.scroll_widget.setFixedWidth(self._scrollwidget_width)
             self.table_widget.show_all_columns()
-            # table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount())])            
+            table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount())])  
+            self.table_widget.setMaximumWidth(self.screen().size().width() - self.sidemenu.minimumWidth() - 10)      
             self.image_editor.initialize_pixmap()
-            print(self.scroll_widget.width())
         else:
             self.mode = "edit-image"
             self.sidemenu.hide()
             self.image_editor_frame.show()
-            self._scrollwidget_width = self.scroll_widget.width()
-            print(self._scrollwidget_width)
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
             self.table_widget.setSelectionMode(QAbstractItemView.SingleSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers) 
@@ -744,14 +739,12 @@ class CcpManager(QMainWindow):
         self.change_mode_toggle = CustomToggleButton()
         self.toolbar.addWidget(self.change_mode_toggle)
 
-    def add_dockableWidget(self, title:str, wdg:QWidget, maxheight:int=0):
+    def add_dockableWidget(self, title:str, wdg:QWidget):
         dock = QDockWidget(title, self)
         temp_widget = QWidget(dock)
         dock.setTitleBarWidget(temp_widget)
         dock.setAllowedAreas(Qt.LeftDockWidgetArea)
         dock.setWidget(wdg)
-        dock.setMaximumHeight(maxheight)
-        dock.setFixedWidth(200)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
         return dock
 
