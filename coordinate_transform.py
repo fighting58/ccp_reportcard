@@ -30,7 +30,7 @@ class CoordinateTransformer:
         if reverse:
             self.transformer = Transformer.from_crs(f"EPSG:{self.output_system}", f"EPSG:{self.input_system}", always_xy=True)
 
-    def __call__(self, **kargs):
+    def transform(self, **kargs):
         """
         WGS84(ESPG:4326, 경위도좌표) <-> GRS80(EPSG:5186, 세계측지계(중부)) 좌표변환
         
@@ -59,6 +59,9 @@ class CoordinateTransformer:
             x, y = self.transformer.transform(iy, ix)
 
         return x, y
+
+    def __call__(self, **kargs):
+        return self.transform(**kargs)
 
 # 사용 예제
 if __name__ == "__main__":

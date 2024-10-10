@@ -1,6 +1,6 @@
 /* 전체 스타일 지정 */
     QMainWindow {
-        background-image: url('images/background2.jpg'); 
+        background-image: url('images/background3.png'); 
         background-color: #aaa;
         }
     QStatusBar QLabel {

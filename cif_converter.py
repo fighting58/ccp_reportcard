@@ -211,5 +211,5 @@ if __name__ == "__main__":
     # print(cif_df)
 
     cif_loader = CifGeoDataFrame()
-    name = cif_loader.getDistrictName('5280042028234')
+    name = cif_loader.pnu2jibun('4146110700200030025')
     print(name)

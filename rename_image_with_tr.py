@@ -1,7 +1,7 @@
 import sys
 import os
 import pandas as pd
-from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QFileDialog, QLabel, QGridLayout
+from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QFileDialog, QLabel, QGridLayout, QFrame
 from PySide6.QtCore import Qt
 import numpy as np
 from coordinate_transform import CoordinateTransformer
@@ -20,36 +20,46 @@ class DialogRenameImage(QDialog):
         self.setGeometry(100, 100, 600, 200)
 
         # 레이아웃 설정
-        layout = QGridLayout()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 10, 0, 0)
+        gridlayout = QGridLayout()
+        gridlayout.setContentsMargins(10, 10, 10, 10)
+
 
         # tr.dat 버튼 생성
         self.tr_button = QPushButton("tr.dat 파일 입력")
         self.tr_button.setFixedWidth(120)
         self.tr_button.clicked.connect(self.load_tr_dat)
-        layout.addWidget(self.tr_button, 0, 0, 1, 1)
+        gridlayout.addWidget(self.tr_button, 0, 0, 1, 1)
 
         self.tr_label = QLabel("tr.dat가 아직 입력되지 않았습니다.")
-        layout.addWidget(self.tr_label, 1, 0, 1, 3)
+        gridlayout.addWidget(self.tr_label, 1, 0, 1, 3)
 
         # Pictures 버튼 생성
         self.pictures_button = QPushButton("이미지 폴더 선택")
         self.pictures_button.setFixedWidth(120)
         self.pictures_button.clicked.connect(self.load_pictures_folder)
-        layout.addWidget(self.pictures_button, 2, 0, 1, 1)
+        gridlayout.addWidget(self.pictures_button, 2, 0, 1, 1)
 
         self.pictures_label = QLabel("사진 폴더가 아직 선택되지 않았습니다.")
-        layout.addWidget(self.pictures_label, 3, 0, 1, 3)
+        gridlayout.addWidget(self.pictures_label, 3, 0, 1, 3)
 
         # 실행 버튼 생성
         self.run_button = QPushButton("실행")
         self.run_button.setFixedWidth(120)
         self.run_button.clicked.connect(self.run_process)
-        layout.addWidget(self.run_button, 4, 2, 1, 1)
+        gridlayout.addWidget(self.run_button, 4, 2, 1, 1)
 
         # 상태 표시 레이블
+        frame = QFrame(self)
+        frame.setObjectName('statusbar')
+        vlayout = QVBoxLayout(frame)
+        vlayout.setContentsMargins(10, 0, 0, 0)
         self.status_label = QLabel("Status: Ready")
-        layout.addWidget(self.status_label, 5, 0, 1, 3)
-
+        self.status_label.setFixedHeight(20)
+        vlayout.addWidget(self.status_label)
+        layout.addLayout(gridlayout)
+        layout.addWidget(frame)
         self.setLayout(layout)
 
     @property
@@ -156,7 +166,7 @@ class DialogRenameImage(QDialog):
             pic_gdf = convert_to_geodataframe(pic_df)
 
             # 버퍼 범위내의 이미지 추출
-            selected_gdf = find_features_within_buffer(pic_gdf, tr_point, 30)
+            selected_gdf = find_features_within_buffer(pic_gdf, tr_point, 50)  #<========= 중요. 촬영점에서의 버퍼 구간설정=========
             
             if not selected_gdf is None:
                 new_gdf= selected_gdf.copy()
@@ -177,8 +187,10 @@ class DialogRenameImage(QDialog):
 
 
 if __name__ == "__main__":
+    from pathlib import Path
     app = QApplication(sys.argv)
     dialog = DialogRenameImage()
+    dialog.setStyleSheet(Path('dialogrenameimage.qss').read_text())
     dialog.show()
     sys.exit(app.exec())
 

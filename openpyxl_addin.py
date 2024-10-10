@@ -14,6 +14,7 @@ import numpy as np
 
 from tkinter import Tk
 from tkinter.font import Font as TkFont
+import os
 
 
 MIN_WIDTH = 2
@@ -405,6 +406,10 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
                margin_px: 여백 지정
         return None
     """
+
+    # src가 존재하지 않거나 파일이 아니면 처리없이 리턴
+    if not (os.path.exists(src) and os.path.isfile(src)):
+        return
 
     # DimensionHolder로 열너비 재설정
     column_width = [17.625, 8.625, 3.125, 3.125, 2.505, 2.505, 2.505, 2.875, 2.505, 1.625, 2.005, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755]

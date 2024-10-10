@@ -34,7 +34,7 @@ class CustomToggleButton(QWidget):
         # 토글 버튼 생성
         self.toggleButton = QPushButton(self)
         self.toggleButton.setCheckable(True)
-        self.toggleButton.setFixedSize(90, 40)  # 버튼 크기 조정
+        self.toggleButton.setFixedSize(120, 40)  # 버튼 크기 조정
         self.toggleButton.toggled.connect(self.onToggle)
         self.toggleButton.setChecked(True)
         self.toggleButton.setStyleSheet("border: none")
@@ -47,11 +47,11 @@ class CustomToggleButton(QWidget):
     def onToggle(self, checked):
         if checked:
             self.toggleButton.setIcon(QIcon('toggle-off-circle-svgrepo-com.svg'))
-            self.toggleButton.setText("테이블 편집")
+            self.toggleButton.setText("사진 편집 모드")
 
         else:
             self.toggleButton.setIcon(QIcon('toggle-on-circle-svgrepo-com.svg'))
-            self.toggleButton.setText("이미지 편집")
+            self.toggleButton.setText("표 편집 모드")
         self.stateChanged.emit(checked)
 
     def isChecked(self):
@@ -90,7 +90,6 @@ class CustomTableWidget(QTableWidget):
 
             # 신호 발송
             self.item_double_clicked.emit(row, num, path, name)
-            print(num, path, name)
 
     def mousePressEvent(self, event):
         item = self.itemAt(event.position().toPoint())
@@ -534,7 +533,7 @@ class CcpManager(QMainWindow):
         self.button_group.setExclusive(True)
         side_container.setLayout(side_layout)
 
-        self.sidemenu = self.add_dockableWidget("테이블 입력", side_container, 800)
+        self.sidemenu = self.add_dockableWidget("테이블 편집", side_container, 800)
 
         # 시그널-슬롯 연결
         self.input_data_button.toggled.connect(input_data_sub.setVisible)
@@ -664,11 +663,13 @@ class CcpManager(QMainWindow):
         view_menu.addAction(self.show_preview_action)
 
     def change_mode(self):
+        self.image_editor_frame.setHidden(self.change_mode_toggle.isChecked())
+        self.table_widget.set_mode = self.change_mode_toggle.isChecked()
+        self.table_widget.clearSelection()
+
         if self.change_mode_toggle.isChecked():
             self.mode = "edit-table"
-            self.sidemenu.show()
-            self.table_widget.set_mode = True
-            self.image_editor_frame.setHidden(True)
+            self.sidemenu.show()                   
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectItems)
             self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
@@ -676,11 +677,10 @@ class CcpManager(QMainWindow):
             self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), self.table_widget.columnWidth(0))
             self.table_widget.setMinimumWidth(0)
             self.table_widget.setMaximumWidth(10000)
+            self.image_editor.initialize_pixmap()
         else:
             self.mode = "edit-image"
             self.sidemenu.hide()
-            self.table_widget.set_mode = False
-            self.image_editor_frame.setVisible(True)
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
             self.table_widget.setSelectionMode(QAbstractItemView.SingleSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers) 
@@ -688,6 +688,7 @@ class CcpManager(QMainWindow):
             self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
             table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
             self.table_widget.setFixedWidth(table_size+5)
+
             
     def add_toolbar(self):
         self.toolbar = QToolBar()
@@ -875,29 +876,24 @@ class CcpManager(QMainWindow):
                     return
                 
                 for i in range(self.table_widget.rowCount()):
-                    location = find_attributes_containing_point(gdf, (float(self.table_widget.item(i,2).text()), float(self.table_widget.item(i,1).text())), ["PNU", "JIBUN", "DOM"])
+                    location = find_attributes_containing_point(gdf, (float(self.table_widget.item(i, 2).text()), float(self.table_widget.item(i, 1).text())), ["PNU", "JIBUN", "DOM"])
                     if not location is None:
                         pnu, jibun, dom = location.iloc[0, :]
-                        self.table_widget.item(i, 6).setText(self.get_district_name(pnu))
-                        self.table_widget.item(i, 7).setText(self.only_jibun(jibun))
-                        self.table_widget.item(i, 8).setText(self.dom_to_doho(dom))    
+                        self.table_widget.item(i, 6).setText(CifGeoDataFrame().getDistrictName(pnu))
+                        self.table_widget.item(i, 7).setText(CifGeoDataFrame().pnu2jibun(pnu))
+                        self.table_widget.item(i, 8).setText(self.dom_to_doho(dom)) 
+                    else:
+                        self.table_widget.item(i, 6).setText("")
+                        self.table_widget.item(i, 7).setText("")
+                        self.table_widget.item(i, 8).setText("") 
+
                 self.status_message.setText("주소검색을 마쳤습니다. 미작성된 소재지를 확인하세요.")
         except Exception as e:
             self.status_message.setText(str(e))
     
-    def get_district_name(self, pnulike:str) -> str:
-        cif_loader = CifGeoDataFrame()
-        return cif_loader.getDistrictName(pnulike=pnulike)
-    
     def dom_to_doho(self, dom):
         j_dom, _ = dom.split('/')
         return j_dom[1:-1]
-    
-    def only_jibun(self, jibun):
-        jibun = jibun.replace(" ", "").strip()
-        if not jibun[-1].isdigit():
-            return jibun[:-1]
-        return jibun
 
     def saveProject(self):
         options = QFileDialog.Options()
@@ -925,6 +921,7 @@ class CcpManager(QMainWindow):
         if fileName:
             table_df = self.tablewidget_to_dataframe(self.table_widget)
             table_df.fillna("", inplace=True)
+            # 서식에 대한 스타일 적용
             border_settings =[{"rng": "A3:AF25","edges": ["all"], "border_style": "hair", "reset": True },  
                             {"rng": "A3:AF25","edges": ["outer"], "border_style": "thin",  "reset": False },
                             {"rng": "A3:A4","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
@@ -937,6 +934,7 @@ class CcpManager(QMainWindow):
                             {"rng": "N14:AF15","edges": ["inner_horizontal"], "border_style": None, "reset": False },
                             {"rng": "N3:S4","edges": ["inner_vertical"], "border_style": None, "reset": False }
             ]
+            # 값 입력
             mappings = [ {'fields': '점번호', 'address': 'B3', "callback":str_deco, 'kargs':{"postfix":"번"}},
                         {'fields': '도선등급', 'address': 'G3', "callback":str_deco, 'kargs':{"postfix":"등"}},
                         {'fields': '도선명', 'address': 'N3'},
@@ -955,11 +953,12 @@ class CcpManager(QMainWindow):
                         {'fields': '조사자(성명)', 'address': 'F22'},
                         {'fields': '조사내용', 'address': 'L22'},
                         {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF19", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
-            ]  ## insert image
+            ]  
 
-            repoter = ReportFromDataframe(template='template.xlsx', sheetname='서식', savefile=fileName, dataframe=table_df, 
+            # 실제 성과표 작성
+            reporter = ReportFromDataframe(template='template.xlsx', sheetname='서식', savefile=fileName, dataframe=table_df, 
                                           max_row=26, border_settings=border_settings, mappings=mappings)
-            repoter.report()
+            reporter.report()
             self.status_message.setText(f"성과표가 성공적으로 저장되었습니다: {fileName}")
 
     def on_update_code(self):
@@ -969,6 +968,7 @@ class CcpManager(QMainWindow):
 
     def on_classify_image(self):
         dialog = DialogRenameImage()
+        dialog.setStyleSheet(Path('dialogrenameimage.qss').read_text(encoding='utf-8'))
         if not self.tr is None:
             dialog.tr = self.tr
         dialog.exec()
@@ -976,30 +976,6 @@ class CcpManager(QMainWindow):
     def _headerindex(self, label:str) -> int:
         return self.HEADER_LABELS.index(label)
     
-    # def resizeEvent(self, event):
-    #     super().resizeEvent(event)
-    #     self.adjustImageEditorSize()
-
-
-    # def adjustImageEditorSize(self):
-    #     """이미지 에디터와 image_label의 크기를 조정하되 4:3 비율을 유지"""
-    #     editor_width = self.image_editor_frame.width()
-    #     editor_height = self.image_editor_frame.height()
-
-    #     # 현재 메인 프레임의 크기를 기준으로 적절한 4:3 크기 계산
-    #     new_width = editor_width
-    #     new_height = int(new_width * 3 / 4)  # 4:3 비율 유지
-
-    #     if new_height > editor_height:
-    #         # 높이가 초과되면, 높이를 기준으로 다시 4:3 비율로 가로 크기 재조정
-    #         new_height = editor_height
-    #         new_width = int(new_height * 4 / 3)
-
-    #     # 크기를 4:3 비율로 설정
-    #     self.image_editor.main_widget.setMaximumSize(int(new_width*0.95), int(new_height*0.95))
-
-
-
 
 if __name__ == "__main__":
     app=QApplication(sys.argv)

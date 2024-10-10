@@ -198,7 +198,7 @@ class ImageEditor(QMainWindow):
         self.h_slider = QSlider(line_width_setting)
         self.h_slider.setFixedSize(40, 10)
         self.h_slider.setMinimum(1)
-        self.h_slider.setMaximum(5)
+        self.h_slider.setMaximum(50)
         self.h_slider.setValue(self.line_width)
         self.h_slider.setOrientation(Qt.Horizontal)
         self.h_slider.valueChanged.connect(self.change_line_width)
@@ -257,14 +257,13 @@ class ImageEditor(QMainWindow):
                 path = self.current_image
             # target_image가 파일형식인 경우 디렉토리 경로만 사용, 아니면 전체를 경로로 사용
             path = self.target_image if os.path.isdir(self.target_image) else os.path.split(self.target_image)[0]
-            print(path)
             # 새로운 경로 지정
             new_path = path if path.endswith('_거리입력_') else path + '/_거리입력_'
             new_filename = f"{self.table_row[1]}_edit.png"   # 파일명을 "{도근번호}_edit"으로 설정하고 png형식으로 저장
             if not os.path.exists(new_path):
                 os.mkdir(new_path)        # 거리입력 디렉토리 생성
             # 이미지 저장
-            self.save_image(filename=os.path.join(new_path, new_filename), quality=100)
+            self.save_image(filename=os.path.join(new_path, new_filename), quality=100, size=QSize(800, 600))
             self.table_update_request.emit(self.table_row[0], new_path, new_filename)
 
     def delete_selected_items(self):
@@ -339,20 +338,24 @@ class ImageEditor(QMainWindow):
         scaled_pixmap = self.scale_pixmap(pixmap)
         self.add_layer(scaled_pixmap)
     
-    def save_image(self, filename=None, quality=50):
+    def save_image(self, filename=None, quality=50, size: QSize=None):
         if not self.layers:
             return
         self.unselect()
         self.update_image()
         if filename is None:
             filename, _ = QFileDialog.getSaveFileName(self, "이미지 저장", "", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
+        
+        if size is not None:
+            pixmap = self.image_label.pixmap().scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        else:
+            pixmap = self.image_label.pixmap()
 
         if filename:
-            self.image_label.pixmap().save(filename, quality=quality)
+            pixmap.save(filename, quality=quality)
 
     def scale_pixmap(self, pixmap, size=None):
         if size is None:
-            print("label size:", self.image_label.size())
             return pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         return pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
@@ -437,7 +440,6 @@ class ImageEditor(QMainWindow):
 
         if self.layers:
             self.open_image_from(self.current_image) 
-
 
     def resizeEvent(self, event):
         self.resize_pixmap()
@@ -578,6 +580,7 @@ class ImageEditor(QMainWindow):
         result = QPixmap(400,300)
         result.fill(Qt.transparent)
         self.image_label.setPixmap(result)
+        self.resize_pixmap()
 
     def update_image(self):
         result = QPixmap(*self.IMAGE_SIZE)

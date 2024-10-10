@@ -3,6 +3,7 @@ from PIL.ExifTags import TAGS, GPSTAGS
 import piexif
 import webbrowser
 import os
+from datetime import datetime
 
 def get_exif_data(image_path:str) -> list:
     image = Image.open(image_path)
@@ -99,7 +100,7 @@ def degree_to_dms_piexif(degree):
     d, m, s = degree2dms(degree)
     
     # GPS 정보는 (정수, 분모) 형식으로 표현되므로 (초는 100을 곱해 분수로 만듦)
-    return ((d, 1), (m, 1), (int(s * 10000000000), 10000000000))  # 삼성(10000000)
+    return ((d, 1), (m, 1), (int(s * 10000000), 10000000))  # 삼성(10000000)
 
 # EXIF를 수정하는 함수
 def update_image_gps_exif(image_path, lon=None, lat=None):
@@ -120,7 +121,19 @@ def update_image_gps_exif(image_path, lon=None, lat=None):
         exif_dict = piexif.load(image.info['exif'])
     except KeyError:
         # EXIF 데이터가 없을 경우 빈 딕셔너리 생성
-        exif_dict = {"GPS": {}}
+        exif_dict = {
+                    "0th": {},
+                    "Exif": {},
+                    "GPS": {},
+                    "1st": {},
+                    "thumbnail": None
+                    }
+        # 기본 EXIF 정보 추가
+        exif_dict['0th'][piexif.ImageIFD.Make] = "Camera Manufacturer"
+        exif_dict['0th'][piexif.ImageIFD.Model] = "Camera Model"
+        exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
+        exif_dict['Exif'][piexif.ExifIFD.FocalLength] = (50, 1)  # 50mm
+        exif_dict['Exif'][piexif.ExifIFD.ISOSpeedRatings] = 100
     
     # 위도와 경도를 DMS 형식으로 변환하여 업데이트
     if not lat is None:
@@ -157,31 +170,32 @@ def show_on_kakao(tag:str, lon:float, lat:float) -> None:
 
 
 if __name__ == "__main__":
-    image1 = 'Exif_info/202409041527070009.jpg'
+    image1 = '_사진Exif/updated_0.jpg'
     image2 = 'Exif_info/202409041527190009.jpg'
-    image3 = 'Exif_info/202409041547290009.jpg'
+    # image3 = 'Exif_info/202409041547290009.jpg'
     from coordinate_transform import CoordinateTransformer
     import webbrowser
 
-    exif_data1 = get_gps_info(image1)
-    transformer = CoordinateTransformer()
+    exif_data1 = get_exif_data(image1)
+    print(exif_data1)
+    # transformer = CoordinateTransformer()
 
-    if exif_data1:
-        lon, lat, direction = exif_data1
-        x, y = transformer(lon=lon, lat=lat)
-        if (lon, lat) is not None:
-            print(f"경위도: ({lon}, {lat}) degrees")
-            print(f'세계중부좌표: ({x}, {y})')
-        else:
-            print("경위도 정보를 찾을 수 없습니다.")
-    else:
-        print("EXIF 데이터를 찾을 수 없습니다.")
+    # if exif_data1:
+    #     lon, lat, direction = exif_data1
+    #     x, y = transformer(lon=lon, lat=lat)
+    #     if (lon, lat) is not None:
+    #         print(f"경위도: ({lon}, {lat}) degrees")
+    #         print(f'세계중부좌표: ({x}, {y})')
+    #     else:
+    #         print("경위도 정보를 찾을 수 없습니다.")
+    # else:
+    #     print("EXIF 데이터를 찾을 수 없습니다.")
 
     ### kakao map에서 확인
     # url_kakao_form = "https://map.kakao.com/link/map/{0}, {2}, {1}"
     # webbrowser.open(url_kakao_form.format("test", lon, lat))
 
-    update_image_gps_exif(image1, 127.23821002720551, 37.23441623266602)
-    update_image_gps_exif(image2, 127.23755300291091, 37.233759159087214)
-    update_image_gps_exif(image3, 127.23739844115542, 37.23488910864183)
+    # update_image_gps_exif(image1, 127.23821002720551, 37.23441623266602)
+    # update_image_gps_exif(image2, 127.23755300291091, 37.233759159087214)
+    # update_image_gps_exif(image3, 127.23739844115542, 37.23488910864183)
     
