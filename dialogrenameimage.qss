@@ -1,4 +1,6 @@
-QWidget { background-color: transparent; }
+QWidget { 
+    color: white;
+    background-color: transparent; }
 
 QDialog { 
     background-image: url('images/background3.png'); 
@@ -9,13 +11,11 @@ QPushButton {
     border-radius: 10px;
     color: #5F84A2;
     background-color: #F0F0F0;
-}
+    }
 QPushButton::hover {
     background-color: #5F84A2;
     color: white;
-}
+    }
 #statusbar {
-    background-color: gray;
-    border-radius: 10px;
-    color: white;
-}
+    background-color: gray;    
+    }

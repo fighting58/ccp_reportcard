@@ -1,4 +1,7 @@
 /* 전체 스타일 지정 */
+    QWidget {
+        color: white;
+        }
     QMainWindow {
         background-image: url('images/background3.png'); 
         background-color: #aaa;
@@ -12,13 +15,27 @@
         outline: 0;
         background-color: transparent;
         }
+    #table_widget::item {
+        margin: 2px;
+        }
+    #table_widget QLineEdit {
+        background-color: #1a1b1c;
+        }
     #table_widget QHeaderView::section { 
+        color: black;
         background-color: darkgray; 
         border: 1px solid white; 
         text-align: center; 
-        }
-    QToolBar {
+        font-weight: bold;
+        }        
+    QToolBar, #temp_label, #temp_label1 {
         background-color: #F0F0F0;
+        }
+    QToolBar *, QMenu::item {
+        color: black;        
+        }
+    QDockWidget QLineEdit {
+        color: black;
         }
     QDockWidget QPushButton {
         padding: 5px 10px 5px 10px;
@@ -31,6 +48,9 @@
         }
     #image_editor #image_label {
         background-color: white;
+        }
+    #image_editor QToolBar {
+        spacing: 5px;
         }
     #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
         border: none; 
@@ -46,6 +66,11 @@
         color: #EAF6FF;
         background-color: #1E4171;
         }
-    #image-editor QMainWindow{
-        background: none;
+    #scroll_widget {
+        background-color: transparent;
+        border: 2px solid red;
+        }
+    #scroll_widget > QWidget > QWidget {
+        background-color: transparent;
+        border: 2px solid red;
         }

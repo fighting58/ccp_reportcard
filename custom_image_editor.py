@@ -580,7 +580,7 @@ class ImageEditor(QMainWindow):
         result = QPixmap(400,300)
         result.fill(Qt.transparent)
         self.image_label.setPixmap(result)
-        self.resize_pixmap()
+        # self.resize_pixmap()
 
     def update_image(self):
         result = QPixmap(*self.IMAGE_SIZE)

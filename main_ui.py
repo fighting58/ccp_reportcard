@@ -4,7 +4,7 @@ import geopandas as gpd
 import pandas as pd
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, QPushButton, QLineEdit,
                                 QRadioButton, QTableWidget, QToolBar, QButtonGroup, QStyledItemDelegate,
-                                QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, 
+                                QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, QSizePolicy, QAbstractItemView)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
@@ -19,6 +19,7 @@ from pathlib import Path
 from CodeDownload_codegokr import CodeGoKr
 from custom_image_editor import ImageEditor
 from rename_image_with_tr import DialogRenameImage
+import time
 
 class CustomToggleButton(QWidget):
     stateChanged = Signal(bool)  # 상태 변경 시그널
@@ -73,7 +74,7 @@ class CustomTableWidget(QTableWidget):
         self.drag_rect = None
         self._is_edit_mode = True
         self.itemDoubleClicked.connect(self.on_item_double_clicked)
-
+        
     @property
     def mode(self):
         return self._is_edit_mode
@@ -153,8 +154,9 @@ class CustomTableWidget(QTableWidget):
         painter = QPainter(self.viewport())
         for item in self.selectedItems():
             rect = self.visualItemRect(item)
-            handle_rect = QRect(rect.right() - self.fill_handle_size, rect.bottom() - self.fill_handle_size, self.fill_handle_size, self.fill_handle_size)
-            painter.fillRect(handle_rect, QColor(0, 0, 0))
+            if self.mode:
+                handle_rect = QRect(rect.right() - self.fill_handle_size, rect.bottom() - self.fill_handle_size, self.fill_handle_size, self.fill_handle_size)
+                painter.fillRect(handle_rect, QColor(250, 250, 250))
         if self.drag_rect:
             painter.setPen(QColor(0, 0, 255))
             painter.drawRect(self.drag_rect)
@@ -312,9 +314,16 @@ class CcpManager(QMainWindow):
 
         self.button_group = QButtonGroup(self)
         # QDockWidget
-        side_container = QWidget()
-        side_layout = QVBoxLayout()
-        side_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        side_container = QWidget(self)
+        side_layout_main = QVBoxLayout(side_container)
+        side_layout_main.setContentsMargins(0, 0, 0, 0)
+        temp_label = QLabel(side_container)
+        temp_label.setObjectName("temp_label")
+        temp_label.setFixedHeight(30)
+        side_layout_main.addWidget(temp_label)
+        side_layout_detail = QVBoxLayout()
+        side_layout_detail.setContentsMargins(10, 10, 10, 10)
+        side_layout_detail.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # 데이터 입력 ==========
         vlayout_data = QVBoxLayout()
@@ -329,6 +338,7 @@ class CcpManager(QMainWindow):
         input_data_sub = QWidget(side_container)
         input_data_sub.setFixedHeight(100)
         input_data_sub_layout = QVBoxLayout()
+        input_data_sub_layout.setSpacing(15)
         self.tr_dat_button = QPushButton(side_container)
         self.tr_dat_button.setText('tr.dat 입력')
         self.load_project_button = QPushButton(side_container)
@@ -340,7 +350,7 @@ class CcpManager(QMainWindow):
         input_data_sub.setVisible(False)
         vlayout_data.addWidget(input_data_sub)
         vlayout_data.setSpacing(5)
-        side_layout.addLayout(vlayout_data)
+        side_layout_detail.addLayout(vlayout_data)
         
         # 공통값 입력 ==========
         vlayout_common = QVBoxLayout()
@@ -397,7 +407,7 @@ class CcpManager(QMainWindow):
         common_input_sub.setVisible(False)
         vlayout_common.addWidget(common_input_sub)
         vlayout_common.setSpacing(5)
-        side_layout.addLayout(vlayout_common)
+        side_layout_detail.addLayout(vlayout_common)
 
         # 사진관리 ================
         vlayout_image = QVBoxLayout()
@@ -444,7 +454,7 @@ class CcpManager(QMainWindow):
         image_management_sub.setVisible(False)
         vlayout_image.addWidget(image_management_sub)
         vlayout_image.setSpacing(5)
-        side_layout.addLayout(vlayout_image)
+        side_layout_detail.addLayout(vlayout_image)
 
         # 토지소재지 입력 ==================
         vlayout_land = QVBoxLayout()
@@ -459,6 +469,7 @@ class CcpManager(QMainWindow):
         land_data_sub = QWidget(side_container)
         land_data_sub.setFixedHeight(100)
         land_data_sub_layout = QVBoxLayout()
+        land_data_sub_layout.setSpacing(15)
         self.cif_button = QPushButton(side_container)
         self.cif_button.setText('Cif 입력')
         self.shp_button = QPushButton(side_container)
@@ -471,7 +482,7 @@ class CcpManager(QMainWindow):
         land_data_sub.setVisible(False)
         vlayout_land.addWidget(land_data_sub)
         vlayout_land.setSpacing(5)
-        side_layout.addLayout(vlayout_land)
+        side_layout_detail.addLayout(vlayout_land)
 
         # 내보내기 ==================
         vlayout_export = QVBoxLayout()
@@ -486,6 +497,7 @@ class CcpManager(QMainWindow):
         export_data_sub = QWidget(side_container)
         export_data_sub.setFixedHeight(100)
         export_data_sub_layout = QVBoxLayout()
+        export_data_sub_layout.setSpacing(15)
         self.export_project_button = QPushButton(side_container)
         self.export_project_button.setText('프로젝트 저장')
         self.export_xlsx_button = QPushButton(side_container)
@@ -497,9 +509,9 @@ class CcpManager(QMainWindow):
         export_data_sub.setVisible(False)
         vlayout_export.addWidget(export_data_sub)
         vlayout_export.setSpacing(5)        
-        side_layout.addLayout(vlayout_export)
+        side_layout_detail.addLayout(vlayout_export)
 
-        side_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        side_layout_detail.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # 기타 툴 ==================
         vlayout_extra = QVBoxLayout()
@@ -514,10 +526,11 @@ class CcpManager(QMainWindow):
         extra_tools_sub = QWidget(side_container)
         extra_tools_sub.setFixedHeight(100)
         extra_tools_sub_layout = QVBoxLayout()
+        extra_tools_sub_layout.setSpacing(15)
         self.update_code_button = QPushButton(side_container)
         self.update_code_button.setText('법정동코드 업데이트')
         self.classify_image_button = QPushButton(side_container)
-        self.classify_image_button.setText('이미지 분류')
+        self.classify_image_button.setText('사진파일명 변경')
         extra_tools_sub_layout.addWidget(self.update_code_button)
         extra_tools_sub_layout.addWidget(self.classify_image_button)
         extra_tools_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -526,13 +539,12 @@ class CcpManager(QMainWindow):
         vlayout_extra.addWidget(extra_tools_sub)
         vlayout_extra.setSpacing(5)
 
-        side_layout.addLayout(vlayout_extra)
-        side_layout.setSpacing(30)
+        side_layout_detail.addLayout(vlayout_extra)
+        side_layout_detail.setSpacing(30)
+        side_layout_main.addLayout(side_layout_detail)
 
         # 버튼그룹 내의 버튼은 하나만 선택할 수 있게
-        self.button_group.setExclusive(True)
-        side_container.setLayout(side_layout)
-
+        self.button_group.setExclusive(True)  
         self.sidemenu = self.add_dockableWidget("테이블 편집", side_container, 800)
 
         # 시그널-슬롯 연결
@@ -545,9 +557,16 @@ class CcpManager(QMainWindow):
 
         #### main widget #########################################################################################
         main_frame = QFrame(self)
-        main_frame_layout = QHBoxLayout()       
+        main_frame_layout = QHBoxLayout(main_frame)
+        main_frame_layout.setContentsMargins(0, 0, 0, 0)  
+        main_frame_layout.setSpacing(0)  
 
         # custom table widget
+        vlayout2 = QVBoxLayout()
+        vlayout2.setContentsMargins(0, 0, 0, 0)
+        temp_label1 = QLabel(self)
+        temp_label1.setObjectName("temp_label1")
+        temp_label1.setFixedHeight(30)
         self.table_widget = CustomTableWidget(self)
         self.table_widget.setObjectName("table_widget")
         self.table_widget.setColumnCount(len(self.HEADER_LABELS))
@@ -556,18 +575,30 @@ class CcpManager(QMainWindow):
         self.table_widget.setWordWrap(False)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.table_widget.verticalHeader().hide()
+        vlayout2.addWidget(temp_label1)
 
+        # table 위젯을 스크롤영역으로 감싸기
+        self.scroll_widget = self.create_scrollable_widget(self.table_widget)
+        self.scroll_widget.setObjectName("scroll_widget")
+        self.scroll_widget.setAttribute(Qt.WA_TranslucentBackground)
+        self.scroll_widget.viewport().setAutoFillBackground(False)
+        # self.scroll_widget.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding))
+        vlayout2.addWidget(self.scroll_widget)
+ 
         # AutoResizeDelegate 설정
         delegate = AutoResizeDelegate(self.table_widget)
         self.table_widget.setItemDelegate(delegate)        
         self.table_widget.setContextMenuPolicy(Qt.NoContextMenu)
         self.alignAllCellsCenter()
+        self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("토지소재(동리)"), 200)
+        self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
+        self._scrollwidget_width = self.scroll_widget.width()
 
         ## image editor widget
         self.image_editor_frame = QFrame(self)
         self.image_editor_frame.setObjectName("image_editor_frame")
         image_editor_frame_layout = QHBoxLayout()
-        image_editor_frame_layout.setContentsMargins(0,0,0,0)
+        image_editor_frame_layout.setContentsMargins(0, 0, 0, 0)
         self.image_editor = ImageEditor(self.image_editor_frame)
         self.image_editor.setObjectName("image_editor")
         self.image_editor.setAttribute(Qt.WA_TranslucentBackground)
@@ -575,10 +606,9 @@ class CcpManager(QMainWindow):
         self.image_editor_frame.setLayout(image_editor_frame_layout)
         self.image_editor_frame.hide()
 
-        main_frame_layout.addWidget(self.table_widget)
+        main_frame_layout.addLayout(vlayout2)
         main_frame_layout.addWidget(self.image_editor_frame)
        
-        main_frame.setLayout(main_frame_layout)
         self.setCentralWidget(main_frame)
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
@@ -663,33 +693,36 @@ class CcpManager(QMainWindow):
         view_menu.addAction(self.show_preview_action)
 
     def change_mode(self):
-        self.image_editor_frame.setHidden(self.change_mode_toggle.isChecked())
         self.table_widget.set_mode = self.change_mode_toggle.isChecked()
         self.table_widget.clearSelection()
-
+        
         if self.change_mode_toggle.isChecked():
+            print(self._scrollwidget_width)
             self.mode = "edit-table"
-            self.sidemenu.show()                   
+            self.image_editor_frame.hide()
+            self.sidemenu.show()
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectItems)
             self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
+            self.scroll_widget.setFixedWidth(self._scrollwidget_width)
             self.table_widget.show_all_columns()
-            self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), self.table_widget.columnWidth(0))
-            self.table_widget.setMinimumWidth(0)
-            self.table_widget.setMaximumWidth(10000)
+            # table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount())])            
             self.image_editor.initialize_pixmap()
+            print(self.scroll_widget.width())
         else:
             self.mode = "edit-image"
             self.sidemenu.hide()
+            self.image_editor_frame.show()
+            self._scrollwidget_width = self.scroll_widget.width()
+            print(self._scrollwidget_width)
             self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
             self.table_widget.setSelectionMode(QAbstractItemView.SingleSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers) 
             self.table_widget.hide_columns(['X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고'])
             self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
             table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
-            self.table_widget.setFixedWidth(table_size+5)
+            self.table_widget.setFixedWidth(table_size)
 
-            
     def add_toolbar(self):
         self.toolbar = QToolBar()
         self.toolbar.setWindowTitle('MainToolbar')
@@ -713,13 +746,40 @@ class CcpManager(QMainWindow):
 
     def add_dockableWidget(self, title:str, wdg:QWidget, maxheight:int=0):
         dock = QDockWidget(title, self)
-        dock.setTitleBarWidget(QWidget())
+        temp_widget = QWidget(dock)
+        dock.setTitleBarWidget(temp_widget)
         dock.setAllowedAreas(Qt.LeftDockWidgetArea)
         dock.setWidget(wdg)
         dock.setMaximumHeight(maxheight)
-        dock.setMinimumWidth(180)
+        dock.setFixedWidth(200)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
-        return dock    
+        return dock
+
+    def create_scrollable_widget(self, widget):
+        """
+        주어진 위젯을 스크롤 가능한 영역 안에 배치하고, 그 스크롤 영역을 반환합니다.
+        
+        :param widget: QWidget, 스크롤 영역 안에 배치할 위젯
+        :return: QScrollArea, 스크롤 가능한 영역
+        """
+        # 스크롤 영역 생성
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)  # 내부 위젯의 크기를 조절 가능하게 설정
+
+        # 컨테이너 위젯 생성
+        container = QWidget()
+
+        # 레이아웃 생성
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)  # 여백 제거
+
+        # 주어진 위젯을 레이아웃에 추가
+        layout.addWidget(widget)
+
+        # 컨테이너를 스크롤 영역에 설정
+        scroll_area.setWidget(container)
+
+        return scroll_area    
 
     def load_table_from_pickle(self, table_widget: QTableWidget, file_path: str):
         try:
@@ -760,6 +820,8 @@ class CcpManager(QMainWindow):
         fileName, _ = QFileDialog.getOpenFileName(self, "Load project", "", "Pickle Files (*.pickle)", options=options)
         if fileName:
             self.load_table_from_pickle(self.table_widget, fileName)
+        self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("토지소재(동리)"), 200)
+        self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
 
     def save_table_to_pickle(self, table_widget: QTableWidget, file_path: str):
         try:
@@ -822,6 +884,8 @@ class CcpManager(QMainWindow):
                 # 나머지는 빈 문자
                 for i in range(3, self.table_widget.columnCount()+1):
                     self.table_widget.setCellItemAligned(row, i, '')
+        self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("토지소재(동리)"), 200)
+        self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
 
     def apply_common_input(self):
         grade = self.grade_input.text()
