@@ -312,7 +312,6 @@ class CcpManager(QMainWindow):
         self.show()
 
     def setupUi(self):
-
         self.button_group = QButtonGroup(self)
         # QDockWidget
         side_container = QWidget(self)
@@ -496,7 +495,7 @@ class CcpManager(QMainWindow):
         
         # 내보내기 - 서브
         export_data_sub = QWidget(side_container)
-        export_data_sub.setFixedHeight(100)
+        export_data_sub.setFixedHeight(80)
         export_data_sub_layout = QVBoxLayout()
         export_data_sub_layout.setSpacing(15)
         self.export_project_button = QPushButton(side_container)
@@ -512,7 +511,7 @@ class CcpManager(QMainWindow):
         vlayout_export.setSpacing(5)        
         side_layout_detail.addLayout(vlayout_export)
 
-        side_layout_detail.addItem(QSpacerItem(10, 200, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        side_layout_detail.addItem(QSpacerItem(10, 150, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # 기타 툴 ==================
         vlayout_extra = QVBoxLayout()
@@ -548,7 +547,8 @@ class CcpManager(QMainWindow):
 
         # 버튼그룹 내의 버튼은 하나만 선택할 수 있게
         self.button_group.setExclusive(True)  
-        self.sidemenu = self.add_dockableWidget("테이블 편집", side_container)
+        scroll_area = self.create_scroll_area(side_container, parent=self)
+        self.sidemenu = self.add_dockableWidget("테이블 편집", scroll_area)
         self.sidemenu.setFixedWidth(200)
         self.setResizable(self.sidemenu)
 
@@ -696,6 +696,12 @@ class CcpManager(QMainWindow):
             widget = self
         widget.setMinimumSize(200, 150)
         widget.setMaximumSize(16777215, 16777215)
+
+    def create_scroll_area(self, widget, parent=None):
+        scroll_area = QScrollArea(parent)
+        scroll_area.setWidgetResizable(True)  # 위젯 크기 조절 가능
+        scroll_area.setWidget(widget)  # 주어진 위젯을 스크롤 영역에 설정
+        return scroll_area
 
     def change_mode(self):
         self.table_widget.set_mode = self.change_mode_toggle.isChecked()
