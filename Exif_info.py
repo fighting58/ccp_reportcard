@@ -4,6 +4,7 @@ import piexif
 import webbrowser
 import os
 from datetime import datetime
+from coordinate_transform import CoordinateTransformer
 
 def get_exif_data(image_path:str) -> list:
     image = Image.open(image_path)
@@ -103,7 +104,7 @@ def degree_to_dms_piexif(degree):
     return ((d, 1), (m, 1), (int(s * 10000000), 10000000))  # 삼성(10000000)
 
 # EXIF를 수정하는 함수
-def update_image_gps_exif(image_path, lon=None, lat=None):
+def update_image_gps_exif(image_path, *kargs):
     """
     이미지 파일의 EXIF에 GPS 정보를 추가 또는 수정하는 함수.
 
@@ -112,6 +113,19 @@ def update_image_gps_exif(image_path, lon=None, lat=None):
     - lon (float): 경도(degree).
     - lat (float): 위도(degree).
     """
+    lon = kargs.get("lon", None)
+    lat = kargs.get("lat", None)  
+    x = kargs.get("x", None)
+    y = kargs.get("y", None)
+
+    # 좌표 변환
+    if all([x, y]) is not None:
+        lon, lat = CoordinateTransformer(x=x, y=y)
+
+    # 경위도 값이 없으면 Null 반환
+    if all([lon, lat]) is None:
+        return
+
     # 이미지 열기
     image = Image.open(image_path)
     path, filename = os.path.split(image_path)
@@ -195,7 +209,7 @@ if __name__ == "__main__":
     # url_kakao_form = "https://map.kakao.com/link/map/{0}, {2}, {1}"
     # webbrowser.open(url_kakao_form.format("test", lon, lat))
 
-    # update_image_gps_exif(image1, 127.23821002720551, 37.23441623266602)
-    # update_image_gps_exif(image2, 127.23755300291091, 37.233759159087214)
-    # update_image_gps_exif(image3, 127.23739844115542, 37.23488910864183)
+    # update_image_gps_exif(image1, lon=127.23821002720551, lat=37.23441623266602)
+    # update_image_gps_exif(image2, lon=127.23755300291091, lat=37.233759159087214)
+    # update_image_gps_exif(image3, lon=127.23739844115542, lat=37.23488910864183)
     

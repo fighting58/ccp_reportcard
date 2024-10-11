@@ -74,3 +74,6 @@
         background-color: transparent;
         border: 2px solid red;
         }
+    QInputDialog > QLabel, QLineEdit, QPushButton {
+        color:black;
+        }

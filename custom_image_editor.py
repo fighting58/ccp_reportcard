@@ -327,9 +327,11 @@ class ImageEditor(QMainWindow):
             self.add_layer(scaled_pixmap)        
             self.resize_pixmap()
 
-    def open_image_from(self, file_name):
+    def open_image_from(self, file_name, set_current:bool = False):
         self.layers=[]
         self.target_image = file_name
+        if set_current:
+            self.current_image = file_name
         if os.path.exists(file_name) and os.path.isfile(file_name):
             pixmap = QPixmap(file_name)
         else:
@@ -442,8 +444,8 @@ class ImageEditor(QMainWindow):
             self.open_image_from(self.current_image) 
 
     def resizeEvent(self, event):
-        self.resize_pixmap()
         super().resizeEvent(event)  
+        self.resize_pixmap()
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key_Delete:
@@ -580,7 +582,7 @@ class ImageEditor(QMainWindow):
         result = QPixmap(400,300)
         result.fill(Qt.transparent)
         self.image_label.setPixmap(result)
-        # self.resize_pixmap()
+        self.resize_pixmap()
 
     def update_image(self):
         result = QPixmap(*self.IMAGE_SIZE)

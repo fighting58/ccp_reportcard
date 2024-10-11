@@ -16,7 +16,7 @@ class DialogRenameImage(QDialog):
         self.pic_path = None  # 이미지 폴더 경로
         self._tr = None     # tr.dat 파일 경로
 
-        self.setWindowTitle("TR 점번호로 이미지명 변경")
+        self.setWindowTitle("TR 점번호로 파일명 변경")
         self.setGeometry(100, 100, 600, 200)
 
         # 레이아웃 설정
@@ -56,7 +56,8 @@ class DialogRenameImage(QDialog):
         vlayout = QVBoxLayout(frame)
         vlayout.setContentsMargins(10, 0, 0, 0)
         self.status_label = QLabel("Status: Ready")
-        self.status_label.setFixedHeight(20)
+        self.status_label.setAlignment(Qt.AlignRight)
+        frame.setFixedHeight(24)
         vlayout.addWidget(self.status_label)
         layout.addLayout(gridlayout)
         layout.addWidget(frame)
@@ -75,6 +76,7 @@ class DialogRenameImage(QDialog):
         file_path, _ = QFileDialog.getOpenFileName(self, "Open tr.dat", "", "Data Files (*.dat)")
         if file_path:
             self.tr = file_path
+            self.status_label.setText(f"tr.dat 선택: {self.tr}")
             return file_path
         return None
 
@@ -101,7 +103,7 @@ class DialogRenameImage(QDialog):
                         X.append(int(x)/100)
                         Y.append(int(y)/100)
                 self.tr_df = pd.DataFrame(data=list(zip(NUM, X, Y)), columns=["Point", "X", "Y"])
-                print(self.tr_df)
+                
             except Exception as e:
                 self.status_label.setText(f"Failed to load tr.dat: {e}")
         else:
@@ -112,7 +114,7 @@ class DialogRenameImage(QDialog):
         if folder:
             self.pic_path = folder
             self.pictures_label.setText(f"{folder}")
-            print("이미지 폴더 선택 완료:", self.pic_path)
+            self.status_label.setText(f"이미지 폴더 선택: {self.pic_path}")
 
     def run_process(self):
         if self.tr_df is None or self.pic_path is None:

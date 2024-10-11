@@ -301,8 +301,9 @@ class CcpManager(QMainWindow):
         self.image_extension = ".jpg"   # 그림파일 디폴트 확장자
         self.is_same_name = False       # 도근번호와 그림파일명이 같은가?
         self.mode = "edit-table"        # 모드 ['edit-table', 'edit-image']
-        self.__width = None
+        self.__width = 400
         self.tr = None                  # tr.dat 파일 경로
+        self.setWindowTitle("지적삼각보조(도근)점 성과표 작성")
         self.add_toolbar()
         self.setupUi()
         self.showMaximized()
@@ -511,7 +512,7 @@ class CcpManager(QMainWindow):
         vlayout_export.setSpacing(5)        
         side_layout_detail.addLayout(vlayout_export)
 
-        side_layout_detail.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        side_layout_detail.addItem(QSpacerItem(10, 200, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # 기타 툴 ==================
         vlayout_extra = QVBoxLayout()
@@ -541,12 +542,16 @@ class CcpManager(QMainWindow):
 
         side_layout_detail.addLayout(vlayout_extra)
         side_layout_detail.setSpacing(30)
+        side_layout_main.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         side_layout_main.addLayout(side_layout_detail)
+        side_layout_main.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # 버튼그룹 내의 버튼은 하나만 선택할 수 있게
         self.button_group.setExclusive(True)  
         self.sidemenu = self.add_dockableWidget("테이블 편집", side_container)
-        self.sidemenu.setMinimumSize(200, 800)
+        self.sidemenu.setFixedWidth(200)
+        self.setResizable(self.sidemenu)
+
      
         # 시그널-슬롯 연결
         self.input_data_button.toggled.connect(input_data_sub.setVisible)
@@ -575,16 +580,11 @@ class CcpManager(QMainWindow):
         self.table_widget.setHorizontalHeaderLabels(self.HEADER_LABELS)
         self.table_widget.setWordWrap(False)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.table_widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         self.table_widget.verticalHeader().hide()
         vlayout2.addWidget(temp_label1)
-
-        # # table 위젯을 스크롤영역으로 감싸기
-        # self.scroll_widget = self.create_scrollable_widget(self.table_widget)
-        # self.scroll_widget.setObjectName("scroll_widget")
-        # self.scroll_widget.setAttribute(Qt.WA_TranslucentBackground)
-        # self.scroll_widget.viewport().setAutoFillBackground(False)
-        self.table_widget.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         vlayout2.addWidget(self.table_widget)
+        main_frame_layout.addLayout(vlayout2)
  
         # AutoResizeDelegate 설정
         delegate = AutoResizeDelegate(self.table_widget)
@@ -605,8 +605,7 @@ class CcpManager(QMainWindow):
         image_editor_frame_layout.addWidget(self.image_editor)
         self.image_editor_frame.setLayout(image_editor_frame_layout)
         self.image_editor_frame.hide()
-
-        main_frame_layout.addLayout(vlayout2)
+  
         main_frame_layout.addWidget(self.image_editor_frame)
        
         self.setCentralWidget(main_frame)
@@ -638,7 +637,7 @@ class CcpManager(QMainWindow):
     def on_item_double_clicked(self, row, num, path, name):
         orginal_image = os.path.join(path, name)
         self.status_message.setText(' '.join([num, orginal_image]))
-        self.image_editor.open_image_from(orginal_image)
+        self.image_editor.open_image_from(orginal_image, set_current=True)
         self.image_editor.table_row = (row, num)
         self.image_editor.update_image()
 
@@ -692,9 +691,16 @@ class CcpManager(QMainWindow):
         view_menu.addAction(self.show_explorer_action)
         view_menu.addAction(self.show_preview_action)
 
+    def setResizable(self, widget=None):
+        if widget is None:
+            widget = self
+        widget.setMinimumSize(200, 150)
+        widget.setMaximumSize(16777215, 16777215)
+
     def change_mode(self):
         self.table_widget.set_mode = self.change_mode_toggle.isChecked()
-        self.table_widget.clearSelection()        
+        self.table_widget.clearSelection()  
+        is_maximized = self.isMaximized()      
         if self.change_mode_toggle.isChecked():
             self.mode = "edit-table"
             self.image_editor_frame.hide()
@@ -703,8 +709,15 @@ class CcpManager(QMainWindow):
             self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
             self.table_widget.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
             self.table_widget.show_all_columns()
-            table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount())])  
-            self.table_widget.setMaximumWidth(self.screen().size().width() - self.sidemenu.minimumWidth() - 10)      
+            if is_maximized:
+                table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount())])  
+                self.table_widget.setMinimumWidth(self.screen().size().width() - self.sidemenu.minimumWidth())  
+                self.setFixedWidth(self.screen().size().width())                
+                self.showMaximized()
+            else:
+                self.table_widget.setMinimumWidth(self.__width - self.sidemenu.minimumWidth())
+                self.setMinimumWidth(self.__width)
+
             self.image_editor.initialize_pixmap()
         else:
             self.mode = "edit-image"
@@ -716,25 +729,27 @@ class CcpManager(QMainWindow):
             self.table_widget.hide_columns(['X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고'])
             self.table_widget.setColumnWidth(self.table_widget.get_column_header().index("사진파일(경로)"), 350)
             table_size = sum([self.table_widget.columnWidth(col) for col in range(self.table_widget.columnCount()) if self.table_widget.isColumnHidden(col) == False])
+            self.__width = self.size().width()
             self.table_widget.setFixedWidth(table_size)
+        self.setResizable()
 
     def add_toolbar(self):
         self.toolbar = QToolBar()
         self.toolbar.setWindowTitle('MainToolbar')
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         
-        # 툴바 아이콘 추가
-        new_action = QAction(QIcon(':/icons/document-add-svgrepo-com.svg'), '새 문서', self)
-        # new_action.triggered.connect(self.new_document)
-        self.toolbar.addAction(new_action)
+        # # 툴바 아이콘 추가
+        # new_action = QAction(QIcon(':/icons/document-add-svgrepo-com.svg'), '새 문서', self)
+        # # new_action.triggered.connect(self.new_document)
+        # self.toolbar.addAction(new_action)
 
-        open_action = QAction(QIcon(':/icons/album-svgrepo-com.svg'), '열기', self)
-        # open_action.triggered.connect(self.open_image)
-        self.toolbar.addAction(open_action)
+        # open_action = QAction(QIcon(':/icons/album-svgrepo-com.svg'), '열기', self)
+        # # open_action.triggered.connect(self.open_image)
+        # self.toolbar.addAction(open_action)
 
-        save_action = QAction(QIcon(':/icons/diskette-svgrepo-com.svg'), '저장', self)
-        # save_action.triggered.connect(self.save_image)
-        self.toolbar.addAction(save_action)
+        # save_action = QAction(QIcon(':/icons/diskette-svgrepo-com.svg'), '저장', self)
+        # # save_action.triggered.connect(self.save_image)
+        # self.toolbar.addAction(save_action)
 
         self.change_mode_toggle = CustomToggleButton()
         self.toolbar.addWidget(self.change_mode_toggle)
@@ -747,32 +762,6 @@ class CcpManager(QMainWindow):
         dock.setWidget(wdg)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
         return dock
-
-    def create_scrollable_widget(self, widget):
-        """
-        주어진 위젯을 스크롤 가능한 영역 안에 배치하고, 그 스크롤 영역을 반환합니다.
-        
-        :param widget: QWidget, 스크롤 영역 안에 배치할 위젯
-        :return: QScrollArea, 스크롤 가능한 영역
-        """
-        # 스크롤 영역 생성
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)  # 내부 위젯의 크기를 조절 가능하게 설정
-
-        # 컨테이너 위젯 생성
-        container = QWidget()
-
-        # 레이아웃 생성
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)  # 여백 제거
-
-        # 주어진 위젯을 레이아웃에 추가
-        layout.addWidget(widget)
-
-        # 컨테이너를 스크롤 영역에 설정
-        scroll_area.setWidget(container)
-
-        return scroll_area    
 
     def load_table_from_pickle(self, table_widget: QTableWidget, file_path: str):
         try:
@@ -1025,6 +1014,7 @@ class CcpManager(QMainWindow):
 
     def on_classify_image(self):
         dialog = DialogRenameImage()
+        dialog.setObjectName("dialogrenameimage")
         dialog.setStyleSheet(Path('dialogrenameimage.qss').read_text(encoding='utf-8'))
         if not self.tr is None:
             dialog.tr = self.tr
