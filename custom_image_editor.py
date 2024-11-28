@@ -6,12 +6,13 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QToolBar, QComboBox, QMenu, QLabel, QColorDialog, QVBoxLayout, QHBoxLayout)
 from PySide6.QtCore import Qt, Signal,Slot, QSize, QRectF, QSizeF, QPointF
 from PySide6.QtGui import QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QPixmap, QFont, QKeyEvent, QFontDatabase, QMouseEvent, QCursor
+import resources
 
 class CustomCursor(QCursor):
     def __init__(self):
         super().__init__()
-        self.pen_cursor = QCursor(QPixmap('images/pen_cursor.svg'), hotX=0, hotY=20)
-        self.text_cursor = QCursor(QPixmap('images/text_cursor.svg'), hotX=0, hotY=0)
+        self.pen_cursor = QCursor(QPixmap(':/images/pen_cursor.svg'), hotX=0, hotY=20)
+        self.text_cursor = QCursor(QPixmap(':/images/text_cursor.svg'), hotX=0, hotY=0)
 
 class Layer:
     def __init__(self, pixmap=None):
@@ -118,15 +119,15 @@ class ImageEditor(QMainWindow):
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         
         # 툴바 아이콘 추가
-        new_action = QAction(QIcon(':/icons/document-add-svgrepo-com.svg'), '새 문서', self)
+        new_action = QAction(QIcon(':images/icons/document-add.svg'), '새 문서', self)
         new_action.triggered.connect(self.new_document)
         self.toolbar.addAction(new_action)
 
-        open_action = QAction(QIcon(':/icons/album-svgrepo-com.svg'), '열기', self)
+        open_action = QAction(QIcon(':images/icons/album.svg'), '열기', self)
         open_action.triggered.connect(self.open_image)
         self.toolbar.addAction(open_action)
 
-        save_action = QAction(QIcon(':/icons/diskette-svgrepo-com.svg'), '저장', self)
+        save_action = QAction(QIcon(':images/icons/diskette.svg'), '저장', self)
         save_action.triggered.connect(self.save_image)
         self.toolbar.addAction(save_action)
 
@@ -134,6 +135,7 @@ class ImageEditor(QMainWindow):
 
         # 폰트명 콤보 박스 추가
         self.font_family_combo = QComboBox(self)
+        self.font_family_combo.setToolTip("폰트 선택")
         self.font_family_combo.addItems(self.get_korean_fonts())
         self.font_family_combo.setCurrentText("굴림")
         self.font_family_combo.currentTextChanged.connect(self.change_font_family)
@@ -141,7 +143,8 @@ class ImageEditor(QMainWindow):
 
         # 폰트 크기 콤보 박스 추가
         self.font_size_combo = EditableComboBox(self)
-        self.font_size_combo.addItems(['8', '9', '10', '11', '12', '14', '16', '18', '20'])
+        self.font_size_combo.setToolTip('폰트 크기')
+        self.font_size_combo.addItems(['12', '14', '16', '18', '20', '24', '28', '32', '36'])
         self.font_size_combo.setCurrentText(str(self.current_font.pointSize()))
         self.font_size_combo.currentTextChanged.connect(self.change_font_size)
         self.toolbar.addWidget(self.font_size_combo)
@@ -149,13 +152,14 @@ class ImageEditor(QMainWindow):
         # 폰트 스타일 서브메뉴 생성
         font_style_menu = QMenu('폰트 스타일', self)
         self.font_style_action = QAction("가", self)
+        self.font_style_action.setToolTip('폰트 스타일')
         self.font_style_action.setFont(QFont(self.current_font.family(), pointSize=12))
         self.font_style_action.setMenu(font_style_menu)
         
-        normal_action = QAction(QIcon(':/icons/text-svgrepo-com.svg'),'Normal', self)
-        bold_action = QAction(QIcon(':/icons/text-bold-svgrepo-com.svg'), 'Bold', self)
-        italic_action = QAction(QIcon(':/icons/text-italic-svgrepo-com.svg'), 'Italic', self)
-        bold_italic_action = QAction(QIcon(':/icons/text-italicBold-svgrepo-com.svg'), 'Bold Italic', self)
+        normal_action = QAction(QIcon(':images/icons/text.svg'),'Normal', self)
+        bold_action = QAction(QIcon(':images/icons/text-bold.svg'), 'Bold', self)
+        italic_action = QAction(QIcon(':images/icons/text-italic.svg'), 'Italic', self)
+        bold_italic_action = QAction(QIcon(':images/icons/text-italicbold.svg'), 'Bold Italic', self)
 
         normal_action.triggered.connect(lambda: self.change_font_style("Normal"))
         bold_action.triggered.connect(lambda: self.change_font_style("Bold"))
@@ -182,6 +186,7 @@ class ImageEditor(QMainWindow):
 
         # 라인 종류 설정
         self.line_type_combo = QComboBox(self)
+        self.line_type_combo.setToolTip('라인 종류')
         self.line_type_combo.addItems(["────", "─ ─ ─"])
         self.line_type_combo.setCurrentText("─ ─ ─")
         self.line_type_combo.currentIndexChanged.connect(self.change_line_type)
@@ -222,13 +227,13 @@ class ImageEditor(QMainWindow):
         self.toolbar.addSeparator()
 
         # 거리 입력 버튼
-        line_drawing_action = QAction(QIcon(':/icons/pen-2-svgrepo-com.svg'), '거리 입력', self)
+        line_drawing_action = QAction(QIcon(':images/icons/pen-2.svg'), '거리 입력', self)
         line_drawing_action.setShortcut(QKeySequence("Ctrl+L"))
         line_drawing_action.triggered.connect(self.start_drawing_line)
         self.toolbar.addAction(line_drawing_action)        
 
         # 텍스트 입력 버튼
-        adding_text_action = QAction(QIcon(':/icons/text-selection-svgrepo-com.svg'), '텍스트 입력', self)
+        adding_text_action = QAction(QIcon(':images/icons/text-selection.svg'), '텍스트 입력', self)
         adding_text_action.setShortcut(QKeySequence("Ctrl+T"))
         adding_text_action.triggered.connect(self.start_adding_text)
         self.toolbar.addAction(adding_text_action)   
@@ -236,11 +241,10 @@ class ImageEditor(QMainWindow):
         # Toolbar2
         self.toolbar2 = QToolBar("Apply Image Toolbar")
         self.addToolBar(Qt.TopToolBarArea, self.toolbar2)
-
-        self.image_apply_button = QPushButton("Save && apply", self.toolbar2)
+        self.image_apply_button = QAction(QIcon('images/icons/magic-stick-3.svg'), '표 반영 및 저장', self) ##########################################
         self.image_apply_button.setShortcut(QKeySequence("Ctrl+Return"))
-        self.image_apply_button.clicked.connect(self.on_request_update)
-        self.toolbar2.addWidget(self.image_apply_button)
+        self.image_apply_button.triggered.connect(self.on_request_update)
+        self.toolbar2.addAction(self.image_apply_button)
 
     # 새로운 메서드들
     def new_document(self):
@@ -600,7 +604,8 @@ class ImageEditor(QMainWindow):
                 pen = QPen(line.color)
                 pen.setWidth(line.width)
                 if line.is_dashed:
-                    pen.setStyle(Qt.DashLine)
+                    pen.setStyle(Qt.CustomDashLine)
+                    pen.setDashPattern([5, 5])
                 if line.is_selected:
                     pen.setWidth(3)
                 painter.setPen(pen)

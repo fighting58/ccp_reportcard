@@ -6,9 +6,9 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QRadioButton, QTableWidget, QToolBar, QButtonGroup, QStyledItemDelegate,
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, QSizePolicy, QAbstractItemView)
-from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot
+from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
-import icons_rc
+import resources
 import pickle   
 from geometric_search import find_attributes_containing_point
 from shp2report import ReportFromDataframe
@@ -46,11 +46,11 @@ class CustomToggleButton(QWidget):
 
     def onToggle(self, checked):
         if checked:
-            self.toggleButton.setIcon(QIcon('toggle-off-circle-svgrepo-com.svg'))
+            self.toggleButton.setIcon(QIcon(':/images/toggle-off-circle.svg'))
             self.toggleButton.setText("사진 편집 모드")
 
         else:
-            self.toggleButton.setIcon(QIcon('toggle-on-circle-svgrepo-com.svg'))
+            self.toggleButton.setIcon(QIcon(':/images/toggle-on-circle.svg'))
             self.toggleButton.setText("표 편집 모드")
         self.stateChanged.emit(checked)
 
@@ -327,9 +327,9 @@ class CcpManager(QMainWindow):
 
         # 데이터 입력 ==========
         vlayout_data = QVBoxLayout()
-        self.input_data_button = QPushButton(side_container)
+        self.input_data_button = QPushButton(QIcon(':images/icons/file-text.svg'), '  데이터 입력', side_container)  
+        self.input_data_button.setIconSize(QSize(32, 32))
         self.input_data_button.setObjectName("input_data_button")
-        self.input_data_button.setText('데이터 입력')
         self.input_data_button.setCheckable(True)
         vlayout_data.addWidget(self.input_data_button)
         self.button_group.addButton(self.input_data_button)
@@ -339,10 +339,10 @@ class CcpManager(QMainWindow):
         input_data_sub.setFixedHeight(100)
         input_data_sub_layout = QVBoxLayout()
         input_data_sub_layout.setSpacing(15)
-        self.tr_dat_button = QPushButton(side_container)
-        self.tr_dat_button.setText('tr.dat 입력')
-        self.load_project_button = QPushButton(side_container)
-        self.load_project_button.setText('기존 프로젝트')
+        self.tr_dat_button = QPushButton(QIcon(':images/icons/target.svg'), '  tr.dat 입력', side_container)        
+        self.tr_dat_button.setIconSize(QSize(24,24))
+        self.load_project_button = QPushButton(QIcon(':images/icons/file-right.svg'), '  기존 프로젝트', side_container)
+        self.load_project_button.setIconSize(QSize(24,24))
         input_data_sub_layout.addWidget(self.tr_dat_button)
         input_data_sub_layout.addWidget(self.load_project_button)
         input_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -354,9 +354,9 @@ class CcpManager(QMainWindow):
         
         # 공통값 입력 ==========
         vlayout_common = QVBoxLayout()
-        self.common_input_button = QPushButton(side_container)
+        self.common_input_button = QPushButton(QIcon(':images/icons/bill-list.svg'), '  공통값 입력', side_container)
+        self.common_input_button.setIconSize(QSize(32, 32))
         self.common_input_button.setObjectName("common_input_button")
-        self.common_input_button.setText('공통값 입력')
         self.common_input_button.setCheckable(True)
         vlayout_common.addWidget(self.common_input_button)
         self.button_group.addButton(self.common_input_button)
@@ -364,7 +364,7 @@ class CcpManager(QMainWindow):
         # 공통값 입력 - 서브
         common_input_sub = QWidget(side_container)
         common_input_sub_layout = QVBoxLayout()
-        common_input_sub.setFixedHeight(290)
+        common_input_sub.setFixedHeight(300)
 
         self.grade_input = QLineEdit(side_container)
         self.name_input = QLineEdit(side_container)
@@ -396,8 +396,8 @@ class CcpManager(QMainWindow):
 
         hlayout1 = QHBoxLayout()
         hspacer1 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.common_apply_button = QPushButton(side_container)
-        self.common_apply_button.setText('적용')
+        self.common_apply_button = QPushButton(QIcon(':images/icons/cpu.svg'), '  적용', side_container)
+        self.common_apply_button.setIconSize(QSize(24,24))
         hlayout1.addItem(hspacer1)
         hlayout1.addWidget(self.common_apply_button)
         common_input_sub_layout.addLayout(hlayout1)
@@ -411,9 +411,9 @@ class CcpManager(QMainWindow):
 
         # 사진관리 ================
         vlayout_image = QVBoxLayout()
-        self.image_management_button = QPushButton(side_container)
+        self.image_management_button = QPushButton(QIcon(':images/icons/gallery-wide.svg'), '  사진 관리', side_container)
+        self.image_management_button.setIconSize(QSize(32, 32))
         self.image_management_button.setObjectName("image_management_button")
-        self.image_management_button.setText('사진 관리')
         self.image_management_button.setCheckable(True)
         vlayout_image.addWidget(self.image_management_button)
         self.button_group.addButton(self.image_management_button)
@@ -423,8 +423,8 @@ class CcpManager(QMainWindow):
         image_management_sub.setFixedHeight(230)
         image_management_sub_layout = QVBoxLayout()
 
-        self.get_image_button = QPushButton(side_container)
-        self.get_image_button.setText('사진폴더 선택')
+        self.get_image_button = QPushButton(QIcon(':images/icons/album.svg'), '  사진폴더 선택', side_container)
+        self.get_image_button.setIconSize(QSize(24,24))
         extension_group = QGroupBox(side_container)
         extension_group.setTitle('확장자')
         vlayout1 = QVBoxLayout()
@@ -437,11 +437,11 @@ class CcpManager(QMainWindow):
         vlayout1.addWidget(self.png_radio)
         extension_group.setLayout(vlayout1)
         self.same_filename_check = QCheckBox(side_container)
-        self.same_filename_check.setText('도근번호 파일명 일치')
+        self.same_filename_check.setText('  도근번호 파일명 일치')
         hlayout2 = QHBoxLayout()
         hspacer2 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.image_apply_button = QPushButton(side_container)
-        self.image_apply_button.setText('적용')
+        self.image_apply_button = QPushButton(QIcon(':images/icons/cpu.svg'), '  적용', side_container)
+        self.image_apply_button.setIconSize(QSize(24,24))
         hlayout2.addItem(hspacer2)
         hlayout2.addWidget(self.image_apply_button)
         
@@ -458,9 +458,9 @@ class CcpManager(QMainWindow):
 
         # 토지소재지 입력 ==================
         vlayout_land = QVBoxLayout()
-        self.land_data_button = QPushButton(side_container)
+        self.land_data_button = QPushButton(QIcon(':images/icons/streets-map-point.svg'), '  토지소재지 검색', side_container)
+        self.land_data_button.setIconSize(QSize(32, 32))
         self.land_data_button.setObjectName("land_data_button")
-        self.land_data_button.setText('토지소재지 입력')
         self.land_data_button.setCheckable(True)
         vlayout_land.addWidget(self.land_data_button)
         self.button_group.addButton(self.land_data_button)
@@ -470,10 +470,10 @@ class CcpManager(QMainWindow):
         land_data_sub.setFixedHeight(100)
         land_data_sub_layout = QVBoxLayout()
         land_data_sub_layout.setSpacing(15)
-        self.cif_button = QPushButton(side_container)
-        self.cif_button.setText('Cif 입력')
-        self.shp_button = QPushButton(side_container)
-        self.shp_button.setText('Shp 입력')
+        self.cif_button = QPushButton(QIcon(':images/icons/cif-file.svg'), '  Cif에서 검색', side_container)
+        self.cif_button.setIconSize(QSize(24,24))        
+        self.shp_button = QPushButton(QIcon(':images/icons/shape-file.svg'), '  Shp에서 검색', side_container)
+        self.shp_button.setIconSize(QSize(24,24))
         land_data_sub_layout.addWidget(self.cif_button)
         land_data_sub_layout.addWidget(self.shp_button)
         land_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -486,22 +486,22 @@ class CcpManager(QMainWindow):
 
         # 내보내기 ==================
         vlayout_export = QVBoxLayout()
-        self.export_button = QPushButton(side_container)
+        self.export_button = QPushButton(QIcon(':images/icons/ssd-round.svg'), '  내보내기', side_container)
+        self.export_button.setIconSize(QSize(32, 32))
         self.export_button.setObjectName("export_button")
-        self.export_button.setText('내보내기')
         self.export_button.setCheckable(True)
         vlayout_export.addWidget(self.export_button)
         self.button_group.addButton(self.export_button)
         
         # 내보내기 - 서브
         export_data_sub = QWidget(side_container)
-        export_data_sub.setFixedHeight(80)
+        export_data_sub.setFixedHeight(100)
         export_data_sub_layout = QVBoxLayout()
         export_data_sub_layout.setSpacing(15)
-        self.export_project_button = QPushButton(side_container)
-        self.export_project_button.setText('프로젝트 저장')
-        self.export_xlsx_button = QPushButton(side_container)
-        self.export_xlsx_button.setText('성과표 엑셀저장')
+        self.export_project_button = QPushButton(QIcon(':images/icons/file-left.svg'), '  프로젝트 저장', side_container)
+        self.export_project_button.setIconSize(QSize(24,24))
+        self.export_xlsx_button = QPushButton(QIcon(':images/icons/xlsx-file.svg'), '  성과표 엑셀저장', side_container)
+        self.export_xlsx_button.setIconSize(QSize(24,24))
         export_data_sub_layout.addWidget(self.export_project_button)
         export_data_sub_layout.addWidget(self.export_xlsx_button)
         export_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -515,9 +515,9 @@ class CcpManager(QMainWindow):
 
         # 기타 툴 ==================
         vlayout_extra = QVBoxLayout()
-        self.extra_tools_button = QPushButton(side_container)
+        self.extra_tools_button = QPushButton(QIcon(':images/icons/settings.svg'), '  기타 툴들', side_container)
+        self.extra_tools_button.setIconSize(QSize(32, 32))
         self.extra_tools_button.setObjectName("extra_tools")
-        self.extra_tools_button.setText('기타 툴들')
         self.extra_tools_button.setCheckable(True)
         vlayout_extra.addWidget(self.extra_tools_button)
         self.button_group.addButton(self.extra_tools_button)
@@ -527,10 +527,10 @@ class CcpManager(QMainWindow):
         extra_tools_sub.setFixedHeight(100)
         extra_tools_sub_layout = QVBoxLayout()
         extra_tools_sub_layout.setSpacing(15)
-        self.update_code_button = QPushButton(side_container)
-        self.update_code_button.setText('법정동코드 업데이트')
-        self.classify_image_button = QPushButton(side_container)
-        self.classify_image_button.setText('사진파일명 변경')
+        self.update_code_button = QPushButton(QIcon(':images/icons/server-square-update.svg'), '  법정동코드 업데이트', side_container)
+        self.update_code_button.setIconSize(QSize(24,24))
+        self.classify_image_button = QPushButton(QIcon(':images/icons/gallery-edit.svg'), '  사진파일명 변경', side_container)
+        self.classify_image_button.setIconSize(QSize(24,24))
         extra_tools_sub_layout.addWidget(self.update_code_button)
         extra_tools_sub_layout.addWidget(self.classify_image_button)
         extra_tools_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -539,6 +539,7 @@ class CcpManager(QMainWindow):
         vlayout_extra.addWidget(extra_tools_sub)
         vlayout_extra.setSpacing(5)
 
+        # 사이드바 레이아웃 정리
         side_layout_detail.addLayout(vlayout_extra)
         side_layout_detail.setSpacing(30)
         side_layout_main.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))

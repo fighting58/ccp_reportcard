@@ -16,6 +16,7 @@
     QScrollArea QLineEdit {
         color: black;
         background-color: white;
+        height: 22px;
         }
     QStatusBar QLabel {
         color: white;
@@ -47,18 +48,20 @@
         }
     QDockWidget QLineEdit {
         color: black;
+        background-color: #D9EBD9;
+        border: none;
         }
     QDockWidget QPushButton {
         padding: 3px 10px 3px 10px;
         border: none;
         border-radius: 10px;
-        color: #EAF6FF;
+        color: #1C274C;
         font-weight: bold;
-        background-color: #155815;
+        background-color: #D9EBD9;
         }
     QDockWidget QPushButton::hover {
         color:#155815;
-        background-color: #EEFFA0;
+        background-color: #EBF2B7;
         }
     #image_editor #image_label {
         background-color: white;
@@ -67,19 +70,20 @@
         spacing: 5px;
         }
     #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
-        color: #EEF7FF;
+        font-size: 14px;
         padding: 5px; 
         border-radius: 5px;
-        background-color: #1E4171;
+        color: #1C274C;
+        background-color: #F0F0F0;
         } 
     #input_data_button::hover, #common_input_button::hover, #image_management_button::hover, #land_data_button::hover, #export_button::hover, #extra_tools::hover {
-        color: #EAF6FF;
-        background-color: #0983C8;
+        color: #1C274C;
+        background-color: #EDF4B9;
         } 
     #input_data_button::checked, #common_input_button::checked, #image_management_button::checked, #land_data_button::checked, #export_button::checked, #extra_tools::checked {
         border: none;
-        color: #1E4171;
-        background-color: #EEF7FF;
+        color: #000;
+        background-color: #74B5E8;
         }
     QInputDialog > QLabel, QLineEdit, QPushButton {
         color:black;
