@@ -1,5 +1,6 @@
 import openpyxl_addin as oa
 import os
+import numpy as np
 
 ######## callback functions here #############
 def str_add(delim: str= '', **kargs):
@@ -23,6 +24,13 @@ def str_deco(**kargs):
     df = kargs.get('dataframe')
     idx = kargs.get('index')
     val = ''.join([prefix, df.loc[idx, field], postfix])
+    oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=val)
+
+def osa(**kargs):
+    field = kargs.get('fields')
+    df = kargs.get('dataframe')
+    idx = kargs.get('index')
+    val = f'{np.round(float(df.loc[idx, field]), 2):.2f}'
     oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=val)
 
 def insert_image(**kargs):
@@ -79,9 +87,9 @@ def toBL(**kargs):
             us = datum[idx+5:][:4]
             s = ".".join([s, us])
         except:
-            datum= datum.replace(" ", "")
-            for c in "˚´˝":
-                datum.replace(c, "-")
+            datum= datum.replace(" ", "").replace('"', '').replace('˝', '')
+            for c in "˚´˚'":
+                datum=datum.replace(c, "-")
             d, m, s = datum.split("-")
             s= f'{s[:7].ljust(7, "0")}'
 

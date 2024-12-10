@@ -16,24 +16,24 @@
     QScrollArea QLineEdit {
         color: black;
         background-color: white;
-        height: 22px;
         }
     QStatusBar QLabel {
         color: white;
         }
-    #table_widget {
+    #rtk_table_widget, #table_widget {
         border: none;
         gridline-color: white;
         outline: 0;
         background-color: transparent;
         }
-    #table_widget::item {
+    #rtk_table_widget::item, #table_widget::item {
         margin: 2px;
         }
-    #table_widget QLineEdit {
+    #rtk_table_widget QLineEdit, #table_widget QLineEdit {
         background-color: #1a1b1c;
+        color: white;
         }
-    #table_widget QHeaderView::section { 
+    #rtk_table_widget QHeaderView::section, #table_widget QHeaderView::section { 
         color: black;
         background-color: darkgray; 
         border: 1px solid white; 
@@ -48,20 +48,18 @@
         }
     QDockWidget QLineEdit {
         color: black;
-        background-color: #D9EBD9;
-        border: none;
         }
     QDockWidget QPushButton {
         padding: 3px 10px 3px 10px;
         border: none;
         border-radius: 10px;
-        color: #1C274C;
+        color: #EAF6FF;
         font-weight: bold;
-        background-color: #D9EBD9;
+        background-color: #155815;
         }
     QDockWidget QPushButton::hover {
         color:#155815;
-        background-color: #EBF2B7;
+        background-color: #EEFFA0;
         }
     #image_editor #image_label {
         background-color: white;
@@ -69,21 +67,20 @@
     #image_editor QToolBar {
         spacing: 5px;
         }
-    #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
-        font-size: 14px;
+    #input_rtkdata_button, #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
+        color: #EEF7FF;
         padding: 5px; 
         border-radius: 5px;
-        color: #1C274C;
-        background-color: #F0F0F0;
+        background-color: #1E4171;
         } 
-    #input_data_button::hover, #common_input_button::hover, #image_management_button::hover, #land_data_button::hover, #export_button::hover, #extra_tools::hover {
-        color: #1C274C;
-        background-color: #EDF4B9;
+    #input_rtkdata_button::hover, #input_data_button::hover, #common_input_button::hover, #image_management_button::hover, #land_data_button::hover, #export_button::hover, #extra_tools::hover {
+        color: #EAF6FF;
+        background-color: #0983C8;
         } 
-    #input_data_button::checked, #common_input_button::checked, #image_management_button::checked, #land_data_button::checked, #export_button::checked, #extra_tools::checked {
+    #input_rtkdata_button::checked, #input_data_button::checked, #common_input_button::checked, #image_management_button::checked, #land_data_button::checked, #export_button::checked, #extra_tools::checked {
         border: none;
-        color: #000;
-        background-color: #74B5E8;
+        color: #1E4171;
+        background-color: #EEF7FF;
         }
     QInputDialog > QLabel, QLineEdit, QPushButton {
         color:black;

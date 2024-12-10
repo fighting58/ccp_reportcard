@@ -2,23 +2,31 @@ import sys
 import os
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, QPushButton, QLineEdit,
                                 QRadioButton, QTableWidget, QToolBar, QButtonGroup, QStyledItemDelegate,
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
-                                QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, QSizePolicy, QAbstractItemView)
+                                QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, 
+                                QSizePolicy, QAbstractItemView, QMenu, QLabel)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
 import resources
 import pickle   
 from geometric_search import find_attributes_containing_point
 from shp2report import ReportFromDataframe
-from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL
+from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL, osa
 from cif_converter import CifGeoDataFrame
 import pickle
 from pathlib import Path
 from CodeDownload_codegokr import CodeGoKr
 from custom_image_editor import ImageEditor
 from rename_image_with_tr import DialogRenameImage
+from openpyxl import load_workbook
+from openpyxl.workbook import Workbook
+from shutil import copy2
+from openpyxl_addin import set_alignment, set_border, set_font, copyRange, pasteRange, copy_row_with_merge, format_date_to_korean, convert_decimal_to_roundup_angle
+from datetime import datetime, timedelta
+import random
 
 class CustomToggleButton(QWidget):
     stateChanged = Signal(bool)  # 상태 변경 시그널
@@ -60,6 +68,7 @@ class CustomToggleButton(QWidget):
     def setChecked(self, checked):
         self.toggleButton.setChecked(checked)
 
+
 class CustomTableWidget(QTableWidget):
     item_double_clicked = Signal(int, str, str, str)
 
@@ -72,6 +81,7 @@ class CustomTableWidget(QTableWidget):
         self.fill_handle_size = 6
         self.drag_rect = None
         self._is_edit_mode = True
+        self.setup_headers()
         self.itemDoubleClicked.connect(self.on_item_double_clicked)
         
     @property
@@ -80,6 +90,16 @@ class CustomTableWidget(QTableWidget):
     @mode.setter
     def set_mode(self, mode: bool):
         self._is_edit_mode = mode
+
+    def setup_headers(self):
+        horizontal_header = self.horizontalHeader()
+        vertical_header = self.verticalHeader()
+        
+        horizontal_header.setContextMenuPolicy(Qt.CustomContextMenu)
+        vertical_header.setContextMenuPolicy(Qt.CustomContextMenu)
+        
+        horizontal_header.customContextMenuRequested.connect(self.show_column_menu)
+        vertical_header.customContextMenuRequested.connect(self.show_row_menu)
 
     def on_item_double_clicked(self, item):
         if not self.mode:
@@ -117,6 +137,24 @@ class CustomTableWidget(QTableWidget):
             self.viewport().update()
         else:
             super().mouseReleaseEvent(event)
+
+    def show_column_menu(self, pos):
+        column = self.horizontalHeader().logicalIndexAt(pos)
+        menu = QMenu()
+        delete_action = menu.addAction("Delete Column")
+        action = menu.exec(self.horizontalHeader().mapToGlobal(pos))
+        
+        if action == delete_action:
+            self.removeColumn(column)
+
+    def show_row_menu(self, pos):
+        row = self.verticalHeader().logicalIndexAt(pos)
+        menu = QMenu()
+        delete_action = menu.addAction("Delete Row")
+        action = menu.exec(self.verticalHeader().mapToGlobal(pos))
+        
+        if action == delete_action:
+            self.removeRow(row)
 
     def fill_items(self):
         start_row = self.start_item.row()
@@ -261,6 +299,65 @@ class CustomTableWidget(QTableWidget):
         for col in range(self.columnCount()):
             self.setColumnHidden(col, False)  # 모든 컬럼 숨김 해제
 
+    def alignAllCellsCenter(self):
+        for row in range(self.rowCount()):
+            for col in range(self.columnCount()):
+                item = QTableWidgetItem()
+                item.setTextAlignment(Qt.AlignCenter)
+                self.setItem(row, col, item)
+
+    def set_forecolor_cells(self, rows, columns=None, color="green"):
+        """
+        Set the text color (foreground) of specific cells in a QTableWidget.
+        If columns is None, the entire row will be colored.
+
+        :param table_widget: The QTableWidget instance
+        :param rows: List of row indices
+        :param columns: List of column indices or None to color entire rows
+        :param color: QColor or string representing the color (e.g., 'green')
+        """
+        for row in rows:
+            if columns is None:  # If no specific columns are provided
+                columns = range(self.columnCount())  # Iterate over all columns in the row
+            for col in columns:
+                item = self.item(row, col)  # Get the item at the specified cell
+                if item:  # Ensure the item exists
+                    item.setForeground(QColor(color))  # Set the text color
+
+    def sort_table_widget(self, primary_column, secondary_column, ascending=True):
+        """
+        Sort a QTableWidget by multiple columns (primary and secondary).
+
+        :param table_widget: The QTableWidget instance
+        :param primary_column: The primary column index to sort by
+        :param secondary_column: The secondary column index to sort by
+        :param ascending: Sort order (True for ascending, False for descending)
+        """
+        # Extract data from QTableWidget
+        rows = []
+        for row in range(self.rowCount()):
+            row_data = []
+            for col in range(self.columnCount()):
+                item = self.item(row, col)
+                row_data.append(item.text() if item else "")  # Extract text, or empty string for empty cells
+            rows.append(row_data)
+
+        # Sort data using Python's sorted() with a lambda for multi-key sort
+        rows_sorted = sorted(
+            rows,
+            key=lambda x: (x[primary_column], x[secondary_column]),
+            reverse=not ascending
+        )
+
+        # Clear and repopulate the table with sorted data
+        self.clearContents()
+        for row_idx, row_data in enumerate(rows_sorted):
+            for col_idx, value in enumerate(row_data):
+                item = QTableWidgetItem(value)
+                item.setTextAlignment(Qt.AlignCenter)
+                self.setItem(row_idx, col_idx, item)
+
+
 class AutoResizeDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super(AutoResizeDelegate, self).__init__(parent)
@@ -288,11 +385,14 @@ class AutoResizeDelegate(QStyledItemDelegate):
 
         return base_size
 
+
 class CcpManager(QMainWindow):
 
     HEADER_LABELS = ['점번호', 'X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', 
                       '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', 
                       '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고', '사진파일(경로)', '사진파일명']
+    RTK_HEADERS = ['번호', '시작', '종료', '에포크', '수평', '수직', '위도', '경도', '타원체고', 'X', 'Y', 'Z', '지오이드고',
+                   'PDOP', 'HDOP', 'VDOP', '장비', '위성수', '솔루션', '사진', '재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도']
     TEMPLATE = 'template.xlsx'
 
     def __init__(self):
@@ -325,9 +425,84 @@ class CcpManager(QMainWindow):
         side_layout_detail.setContentsMargins(10, 10, 10, 10)
         side_layout_detail.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
+        # RTK 관측부 ==========
+        vlayout_rtk = QVBoxLayout()
+        self.input_rtkdata_button = QPushButton(QIcon("images/icons/satellite.svg"), f'  {"RTK 기록부 외":^8}', side_container)
+        self.input_rtkdata_button.setIconSize(QSize(32, 32))
+        self.input_rtkdata_button.setObjectName("input_rtkdata_button")
+        self.input_rtkdata_button.setCheckable(True)
+        vlayout_rtk.addWidget(self.input_rtkdata_button)
+        self.button_group.addButton(self.input_rtkdata_button)
+        
+        # RTK 관측부 - 서브
+        self.rtk_data_sub = QWidget(side_container)
+        self.rtk_data_sub.setFixedHeight(440)
+        rtk_data_sub_layout = QVBoxLayout()
+        # rtk_data_sub_layout.setSpacing(15)
+        self.rtk_xlsx_button = QPushButton(QIcon(':images/icons/xlsx-file.svg'), f'  {"관측데이터(xlsx)":^12} ', side_container)
+        self.rtk_xlsx_button.setIconSize(QSize(24,24))
+        rtk_label1 = QLabel(side_container)        
+        rtk_label1.setText("└ 번호,재질 수정/입력")
+        rtk_label1.setAlignment(Qt.AlignRight)
+        self.rtk_sort_button = QPushButton(QIcon('images/icons/sort-from-top-to-bottom.svg'), f' {"번호-시작 정렬":^12}', side_container)
+        self.rtk_sort_button.setIconSize(QSize(24,24))
+        self.rtk_timecheck_button=QPushButton(QIcon('images/icons/clock-circle.svg'), f'   {"타임 조정":^12}   ', side_container)
+        self.rtk_timecheck_button.setIconSize(QSize(24,24))
+        self.rtk_cif_button = QPushButton(QIcon(':images/icons/cif-file.svg'), f'    {"Cif 입력":^12}     ', side_container)
+        self.rtk_cif_button.setIconSize(QSize(24,24))
+        self.jigu_name = QLineEdit(side_container)  # 지구명
+        self.jigu_attr = QLineEdit(side_container)  # 지구특성      
+        self.antena_sn = QLineEdit(side_container)  # 안테나 명(번호)
+        self.surveyor_grade = QLineEdit(side_container) # 관측자(직)
+        self.surveyor_name = QLineEdit(side_container)  # 관측자(명)
+
+        self.jigu_name.setPlaceholderText("지구명")
+        self.jigu_attr.setPlaceholderText("지구특성")
+        self.antena_sn.setPlaceholderText("안테나 명(번호)")
+        self.surveyor_grade.setPlaceholderText("관측자(직)")
+        self.surveyor_name.setPlaceholderText("관측자(성명)")
+
+        rtk_data_sub_layout.addWidget(self.rtk_xlsx_button)
+        rtk_data_sub_layout.addWidget(rtk_label1)
+        rtk_data_sub_layout.addWidget(self.rtk_sort_button)
+        rtk_data_sub_layout.addWidget(self.rtk_timecheck_button)
+        rtk_data_sub_layout.addWidget(self.rtk_cif_button)
+        rtk_data_sub_layout.addWidget(self.jigu_name)
+        rtk_data_sub_layout.addWidget(self.jigu_attr)
+        rtk_data_sub_layout.addWidget(self.antena_sn)
+        rtk_data_sub_layout.addWidget(self.surveyor_grade)
+        rtk_data_sub_layout.addWidget(self.surveyor_name)
+
+        self.rtk_record_button = QPushButton(QIcon('images/icons/document-add.svg'), f'   {"관측 기록부":^8}   ', side_container)
+        self.rtk_record_button.setIconSize(QSize(24,24))
+        self.rtk_result_button = QPushButton(QIcon('images/icons/document-medicine.svg'), f'   {"관측 결과부":^8}   ', side_container)
+        self.rtk_result_button.setIconSize(QSize(24,24))
+        self.rtk_ilram_button = QPushButton(QIcon('images/icons/document.svg'), f'  {"기준점일람표":^8}  ', side_container)
+        self.rtk_ilram_button.setIconSize(QSize(24,24))
+
+        rtk_data_sub_layout.addWidget(self.rtk_record_button)
+        rtk_data_sub_layout.addWidget(self.rtk_result_button)
+        rtk_data_sub_layout.addWidget(self.rtk_ilram_button)
+
+        rtk_hlayout = QHBoxLayout()
+        rtk_hspacer = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.rtk_apply_button = QPushButton(QIcon(':images/icons/cpu.svg'), f'  {"데이터전환"}  ', side_container)
+        self.rtk_apply_button.setIconSize(QSize(24,24))
+
+        rtk_hlayout.addItem(rtk_hspacer)
+        rtk_hlayout.addWidget(self.rtk_apply_button)
+        rtk_data_sub_layout.addLayout(rtk_hlayout)
+
+        rtk_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.rtk_data_sub.setLayout(rtk_data_sub_layout)
+        self.rtk_data_sub.setVisible(False)
+        vlayout_rtk.addWidget(self.rtk_data_sub)
+        vlayout_rtk.setSpacing(5)        
+        side_layout_detail.addLayout(vlayout_rtk)
+
         # 데이터 입력 ==========
         vlayout_data = QVBoxLayout()
-        self.input_data_button = QPushButton(QIcon(':images/icons/file-text.svg'), '  데이터 입력', side_container)  
+        self.input_data_button = QPushButton(QIcon(':images/icons/file-text.svg'), f'  {"데이터 입력":^8}', side_container)  
         self.input_data_button.setIconSize(QSize(32, 32))
         self.input_data_button.setObjectName("input_data_button")
         self.input_data_button.setCheckable(True)
@@ -335,26 +510,26 @@ class CcpManager(QMainWindow):
         self.button_group.addButton(self.input_data_button)
         
         # 데이터 입력 - 서브
-        input_data_sub = QWidget(side_container)
-        input_data_sub.setFixedHeight(100)
+        self.input_data_sub = QWidget(side_container)
+        self.input_data_sub.setFixedHeight(100)
         input_data_sub_layout = QVBoxLayout()
         input_data_sub_layout.setSpacing(15)
-        self.tr_dat_button = QPushButton(QIcon(':images/icons/target.svg'), '  tr.dat 입력', side_container)        
+        self.tr_dat_button = QPushButton(QIcon(':images/icons/target.svg'), f'    {"tr.dat 입력":^12}     ', side_container)        
         self.tr_dat_button.setIconSize(QSize(24,24))
-        self.load_project_button = QPushButton(QIcon(':images/icons/file-right.svg'), '  기존 프로젝트', side_container)
+        self.load_project_button = QPushButton(QIcon(':images/icons/file-right.svg'), f' {"기존 프로젝트":^12}  ', side_container)
         self.load_project_button.setIconSize(QSize(24,24))
         input_data_sub_layout.addWidget(self.tr_dat_button)
         input_data_sub_layout.addWidget(self.load_project_button)
         input_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        input_data_sub.setLayout(input_data_sub_layout)
-        input_data_sub.setVisible(False)
-        vlayout_data.addWidget(input_data_sub)
+        self.input_data_sub.setLayout(input_data_sub_layout)
+        self.input_data_sub.setVisible(False)
+        vlayout_data.addWidget(self.input_data_sub)
         vlayout_data.setSpacing(5)
         side_layout_detail.addLayout(vlayout_data)
         
         # 공통값 입력 ==========
         vlayout_common = QVBoxLayout()
-        self.common_input_button = QPushButton(QIcon(':images/icons/bill-list.svg'), '  공통값 입력', side_container)
+        self.common_input_button = QPushButton(QIcon(':images/icons/bill-list.svg'), f'  {"공통값 입력":^8}', side_container)
         self.common_input_button.setIconSize(QSize(32, 32))
         self.common_input_button.setObjectName("common_input_button")
         self.common_input_button.setCheckable(True)
@@ -411,7 +586,7 @@ class CcpManager(QMainWindow):
 
         # 사진관리 ================
         vlayout_image = QVBoxLayout()
-        self.image_management_button = QPushButton(QIcon(':images/icons/gallery-wide.svg'), '  사진 관리', side_container)
+        self.image_management_button = QPushButton(QIcon(':images/icons/gallery-wide.svg'), f'  {"이미지 삽입":^8}', side_container)
         self.image_management_button.setIconSize(QSize(32, 32))
         self.image_management_button.setObjectName("image_management_button")
         self.image_management_button.setCheckable(True)
@@ -438,6 +613,7 @@ class CcpManager(QMainWindow):
         extension_group.setLayout(vlayout1)
         self.same_filename_check = QCheckBox(side_container)
         self.same_filename_check.setText('  도근번호 파일명 일치')
+        self.same_filename_check.setChecked(True)
         hlayout2 = QHBoxLayout()
         hspacer2 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.image_apply_button = QPushButton(QIcon(':images/icons/cpu.svg'), '  적용', side_container)
@@ -458,7 +634,7 @@ class CcpManager(QMainWindow):
 
         # 토지소재지 입력 ==================
         vlayout_land = QVBoxLayout()
-        self.land_data_button = QPushButton(QIcon(':images/icons/streets-map-point.svg'), '  토지소재지 검색', side_container)
+        self.land_data_button = QPushButton(QIcon(':images/icons/streets-map-point.svg'), f'  {"소재지 검색":^8}', side_container)
         self.land_data_button.setIconSize(QSize(32, 32))
         self.land_data_button.setObjectName("land_data_button")
         self.land_data_button.setCheckable(True)
@@ -470,7 +646,7 @@ class CcpManager(QMainWindow):
         land_data_sub.setFixedHeight(100)
         land_data_sub_layout = QVBoxLayout()
         land_data_sub_layout.setSpacing(15)
-        self.cif_button = QPushButton(QIcon(':images/icons/cif-file.svg'), '  Cif에서 검색', side_container)
+        self.cif_button = QPushButton(QIcon(':images/icons/cif-file.svg'), '   Cif에서 검색', side_container)
         self.cif_button.setIconSize(QSize(24,24))        
         self.shp_button = QPushButton(QIcon(':images/icons/shape-file.svg'), '  Shp에서 검색', side_container)
         self.shp_button.setIconSize(QSize(24,24))
@@ -486,7 +662,7 @@ class CcpManager(QMainWindow):
 
         # 내보내기 ==================
         vlayout_export = QVBoxLayout()
-        self.export_button = QPushButton(QIcon(':images/icons/ssd-round.svg'), '  내보내기', side_container)
+        self.export_button = QPushButton(QIcon(':images/icons/ssd-round.svg'), f'   {"내보내기":^8} ', side_container)
         self.export_button.setIconSize(QSize(32, 32))
         self.export_button.setObjectName("export_button")
         self.export_button.setCheckable(True)
@@ -498,7 +674,7 @@ class CcpManager(QMainWindow):
         export_data_sub.setFixedHeight(100)
         export_data_sub_layout = QVBoxLayout()
         export_data_sub_layout.setSpacing(15)
-        self.export_project_button = QPushButton(QIcon(':images/icons/file-left.svg'), '  프로젝트 저장', side_container)
+        self.export_project_button = QPushButton(QIcon(':images/icons/file-left.svg'), '   프로젝트 저장 ', side_container)
         self.export_project_button.setIconSize(QSize(24,24))
         self.export_xlsx_button = QPushButton(QIcon(':images/icons/xlsx-file.svg'), '  성과표 엑셀저장', side_container)
         self.export_xlsx_button.setIconSize(QSize(24,24))
@@ -515,7 +691,7 @@ class CcpManager(QMainWindow):
 
         # 기타 툴 ==================
         vlayout_extra = QVBoxLayout()
-        self.extra_tools_button = QPushButton(QIcon(':images/icons/settings.svg'), '  기타 툴들', side_container)
+        self.extra_tools_button = QPushButton(QIcon(':images/icons/settings.svg'), f'  {"기타 툴들":^8} ', side_container)
         self.extra_tools_button.setIconSize(QSize(32, 32))
         self.extra_tools_button.setObjectName("extra_tools")
         self.extra_tools_button.setCheckable(True)
@@ -527,9 +703,9 @@ class CcpManager(QMainWindow):
         extra_tools_sub.setFixedHeight(100)
         extra_tools_sub_layout = QVBoxLayout()
         extra_tools_sub_layout.setSpacing(15)
-        self.update_code_button = QPushButton(QIcon(':images/icons/server-square-update.svg'), '  법정동코드 업데이트', side_container)
+        self.update_code_button = QPushButton(QIcon(':images/icons/server-square-update.svg'), '법정동코드 업데이트', side_container)
         self.update_code_button.setIconSize(QSize(24,24))
-        self.classify_image_button = QPushButton(QIcon(':images/icons/gallery-edit.svg'), '  사진파일명 변경', side_container)
+        self.classify_image_button = QPushButton(QIcon(':images/icons/gallery-edit.svg'), '  사진파일명 변경   ', side_container)
         self.classify_image_button.setIconSize(QSize(24,24))
         extra_tools_sub_layout.addWidget(self.update_code_button)
         extra_tools_sub_layout.addWidget(self.classify_image_button)
@@ -541,7 +717,7 @@ class CcpManager(QMainWindow):
 
         # 사이드바 레이아웃 정리
         side_layout_detail.addLayout(vlayout_extra)
-        side_layout_detail.setSpacing(30)
+        side_layout_detail.setSpacing(20)
         side_layout_main.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         side_layout_main.addLayout(side_layout_detail)
         side_layout_main.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -552,10 +728,10 @@ class CcpManager(QMainWindow):
         self.sidemenu = self.add_dockableWidget("테이블 편집", scroll_area)
         self.sidemenu.setFixedWidth(200)
         self.setResizable(self.sidemenu)
-
      
         # 시그널-슬롯 연결
-        self.input_data_button.toggled.connect(input_data_sub.setVisible)
+        self.input_rtkdata_button.toggled.connect(self.input_rtkdata_toggle)
+        self.input_data_button.toggled.connect(self.input_data_toggle)
         self.common_input_button.toggled.connect(common_input_sub.setVisible)
         self.image_management_button.toggled.connect(image_management_sub.setVisible)
         self.land_data_button.toggled.connect(land_data_sub.setVisible)
@@ -574,6 +750,20 @@ class CcpManager(QMainWindow):
         temp_label1 = QLabel(self)
         temp_label1.setObjectName("temp_label1")
         temp_label1.setFixedHeight(30)
+
+        self.rtk_table_widget = CustomTableWidget()
+        self.rtk_table_widget.setObjectName("rtk_table_widget")
+        self.rtk_table_widget.setColumnCount(len(self.RTK_HEADERS))
+        self.rtk_table_widget.setRowCount(5)
+        self.rtk_table_widget.setHorizontalHeaderLabels(self.RTK_HEADERS)
+        self.rtk_table_widget.setWordWrap(False)
+        self.rtk_table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.rtk_table_widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("시작"), 160)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("종료"), 160)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위도"), 140)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("경도"), 150)
+
         self.table_widget = CustomTableWidget(self)
         self.table_widget.setObjectName("table_widget")
         self.table_widget.setColumnCount(len(self.HEADER_LABELS))
@@ -584,6 +774,7 @@ class CcpManager(QMainWindow):
         self.table_widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         self.table_widget.verticalHeader().hide()
         vlayout2.addWidget(temp_label1)
+        vlayout2.addWidget(self.rtk_table_widget)
         vlayout2.addWidget(self.table_widget)
         main_frame_layout.addLayout(vlayout2)
  
@@ -616,6 +807,14 @@ class CcpManager(QMainWindow):
         self.statusbar.addPermanentWidget(self.status_message)
 
         # signal-slot connection
+        self.rtk_xlsx_button.clicked.connect(self.loadRTKdata)
+        self.rtk_cif_button.clicked.connect(self.rtk_location)
+        self.rtk_sort_button.clicked.connect(self.rtk_sort)
+        self.rtk_timecheck_button.clicked.connect(self.rtk_timecheck)
+        self.rtk_record_button.clicked.connect(self.rtk_record)
+        self.rtk_result_button.clicked.connect(self.rtk_result)
+        self.rtk_ilram_button.clicked.connect(self.rtk_ilram)
+        self.rtk_apply_button.clicked.connect(self.rtk_apply)
         self.load_project_button.clicked.connect(self.loadProject)
         self.tr_dat_button.clicked.connect(self.getDatFile)
         self.common_apply_button.clicked.connect(self.apply_common_input)
@@ -769,6 +968,399 @@ class CcpManager(QMainWindow):
         dock.setWidget(wdg)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
         return dock
+
+    def input_rtkdata_toggle(self):
+        if self.input_rtkdata_button.isChecked():
+            self.rtk_data_sub.setVisible(True)
+            self.rtk_table_widget.show()
+            self.table_widget.hide()
+        else:
+            self.rtk_data_sub.hide()
+            self.rtk_table_widget.hide()
+            self.table_widget.show()
+    def input_data_toggle(self):
+        if self.input_data_button.isChecked():
+            self.input_data_sub.setVisible(True)
+            self.rtk_table_widget.hide()
+            self.table_widget.show()
+        else:
+            self.input_data_sub.hide()
+
+    def loadRTKdata(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Excel 파일 선택", "", "Excel Files (*.xlsx)")
+        if file_path:
+            try:
+                # Load the workbook and the first sheet using openpyxl
+                wb = load_workbook(file_path)
+                sheet = wb.active  # Get the active sheet
+
+                # Extract data from the sheet into a list of lists
+                data = []
+                for row in sheet.iter_rows(values_only=True):  # Only get values, not cell objects
+                    data.append(list(row))  # Convert row tuple to list
+
+                if not data:
+                    raise ValueError("The Excel file is empty or has no readable data.")
+
+                # Convert the data to a Pandas DataFrame
+                headers = data[0]  # First row as headers
+                rows = data[1:]  # Remaining rows as data
+                if not headers:
+                    raise ValueError("The Excel file does not contain headers in the first row.")
+                df = pd.DataFrame(rows, columns=headers)
+
+                # Sort DataFrame by '번호' column
+                if '번호' not in df.columns:
+                    self.status_message.setText("'번호' column not found in the Excel file.")
+                    raise ValueError("'번호' column not found in the Excel file.")
+                df_sorted = df.sort_values(by='번호')
+
+                # Prepare data for TableWidget (include headers)
+                data_for_table = [df_sorted.columns.tolist()] + df_sorted.values.tolist()
+
+                # Clear existing content
+                self.rtk_table_widget.clearContents()
+                self.rtk_table_widget.setRowCount(len(data_for_table) - 1)
+                self.rtk_table_widget.alignAllCellsCenter()
+
+                # Populate table
+                for row_idx, row in enumerate(data_for_table[1:], start=0):
+                    for col_idx, value in enumerate(row):
+                        item = QTableWidgetItem(str(value) if value is not None else "")
+                        item.setTextAlignment(Qt.AlignCenter)
+                        self.rtk_table_widget.setItem(row_idx, col_idx, item)
+
+            except Exception as e:
+                self.status_message.setText(f"파일 로드 중 오류 발생: {e}")
+    
+    def rtk_sort(self):
+        self.rtk_table_widget.sort_table_widget(0,1)
+
+    def rtk_timecheck(self):
+        # 단일 관측시간 점검
+        survey_count = self.rtk_table_widget.rowCount()
+
+        for row in range(survey_count):
+            t1 = self.rtk_table_widget.item(row, 1).text()
+            t2 = self.rtk_table_widget.item(row, 2).text()
+            t_diff = self.calculate_time_difference(t1, t2, unit='seconds')
+            if t_diff < 60:
+                self.rtk_table_widget.item(row, 2).setText(self.add_time_to_datetime(t1, seconds= random.randrange(61, 70)))
+                self.rtk_table_widget.item(row, 2).setForeground(Qt.red)
+        # 관측간 간격
+        for row in range(0, survey_count, 2):
+            t1 = self.rtk_table_widget.item(row, 1).text()
+            t2 = self.rtk_table_widget.item(row+1, 1).text()
+            t_diff = self.calculate_time_difference(t1, t2, unit='seconds')
+            if t_diff < 3600:
+                new_time = self.add_time_to_datetime(t1, seconds= random.randrange(3661, 3900))
+                self.rtk_table_widget.item(row+1, 1).setText(new_time)
+                self.rtk_table_widget.item(row+1, 2).setText(self.add_time_to_datetime(new_time, seconds = random.randrange(61,70)))
+                self.rtk_table_widget.item(row+1, 1).setForeground(Qt.red)
+                self.rtk_table_widget.item(row+1, 2).setForeground(Qt.red)
+
+    def add_time_to_datetime(self, datetime_str, hours=0, minutes=0, seconds=0):
+        # 문자열을 datetime 객체로 변환
+        original_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+        
+        # timedelta를 사용하여 시간과 분을 더함
+        new_datetime = original_datetime + timedelta(hours=hours, minutes=minutes, seconds=seconds)
+        
+        # 새로운 datetime 객체를 문자열로 변환하여 반환
+        return new_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+    def calculate_time_difference(self, datetime1, datetime2, unit='seconds'):
+        """
+        두 datetime 문자열의 차이를 계산합니다.
+
+        :param datetime1: 첫 번째 datetime 문자열 (예: "2024-11-20 14:20:02")
+        :param datetime2: 두 번째 datetime 문자열 (예: "2024-11-20 15:20:02")
+        :param unit: 결과를 반환할 단위 ('seconds', 'minutes', 'hours')
+        :return: 시간 차이 (int 또는 float)
+        """
+        # datetime 문자열을 datetime 객체로 변환
+        format_str = "%Y-%m-%d %H:%M:%S"
+        dt1 = datetime.strptime(datetime1, format_str)
+        dt2 = datetime.strptime(datetime2, format_str)
+        
+        # 시간 차이 계산
+        delta = abs(dt2 - dt1)  # 절대값으로 시간 차이 계산
+        
+        # 단위에 따라 반환
+        if unit == 'seconds':
+            return delta.total_seconds()
+        elif unit == 'minutes':
+            return delta.total_seconds() / 60
+        elif unit == 'hours':
+            return delta.total_seconds() / 3600
+        else:
+            raise ValueError("Invalid unit. Choose 'seconds', 'minutes', or 'hours'.")
+
+    def rtk_location(self):
+        jijuk, _ = QFileDialog.getOpenFileName(self,"Get Jijuk DB", "", "Cif File (*.cif)")
+        try:
+            if jijuk:
+                gdf = CifGeoDataFrame(jijuk).convert_to_geodataframe()                
+                if gdf is None: 
+                    return
+                
+                for i in range(self.rtk_table_widget.rowCount()):
+                    location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "JIBUN", "DOM"])
+                    if not location is None:
+                        pnu, jibun, dom = location.iloc[0, :]
+                        self.rtk_table_widget.item(i, 21).setText(CifGeoDataFrame().getDistrictName(pnu))
+                        self.rtk_table_widget.item(i, 22).setText(CifGeoDataFrame().pnu2jibun(pnu))
+                        self.rtk_table_widget.item(i, 23).setText(self.dom_to_doho(dom)) 
+                    else:
+                        print('location none')
+                        self.rtk_table_widget.item(i, 21).setText("")
+                        self.rtk_table_widget.item(i, 22).setText("")
+                        self.rtk_table_widget.item(i, 23).setText("") 
+                self.status_message.setText("주소검색을 마쳤습니다. 미작성된 소재지를 확인하세요.")
+
+        except Exception as e:
+            self.status_message.setText(str(e))
+
+    def rtk_record(self):
+        """ 위성관측기록부 작성 """
+        record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_관측기록부.xlsx'
+        template_path = "RTK_TEMPLATE.xlsx"
+        sheet_name = '@관측기록부'
+
+        # Load the template workbook
+        copy2(template_path, record_file)
+        new_wb = load_workbook(record_file)
+        
+        # Ensure the specified sheet exists
+        if sheet_name not in new_wb.sheetnames:
+            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
+        
+        # Get the sheet to copy
+        record_sheet = new_wb[sheet_name]
+
+        # Remove the default sheet created in the new workbook
+        for sht in new_wb.sheetnames:
+            if sheet_name != sht:
+                del new_wb[sht]        
+
+        survey_count = self.rtk_table_widget.rowCount()
+
+        copy_row_with_merge(record_sheet, 17, 17, survey_count-1)
+
+        if survey_count % 2 == 1:
+            self.status_message.setText('관측기록이 짝수 회가 아닙니다.')
+            raise ValueError('관측기록이 짝수 회가 아닙니다.')
+
+        # set font, alignment, border style
+        set_font(record_sheet[f"B17:P{17 + survey_count-1}"], sz=9)
+        set_alignment(record_sheet[f"B17:P{17 + survey_count-1}"], horizontal='center', vertical='center')
+        set_border(record_sheet[f"B17:P{17 + survey_count-1}"], edges=["all"], border_style='thin')
+        
+        for col in range(17, 17+ survey_count):
+            record_sheet.row_dimensions[col].height = 15
+
+        # 관측 정보 입력
+        record_sheet['E3'].value = self.jigu_name.text()  # 지구명
+        record_sheet['E4'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().split(' ')[0])  # 관측일자
+        record_sheet['N4'].value = self.surveyor_name.text()  # 관측자
+        record_sheet['E5'].value = self.jigu_attr.text()  # 지구특성
+        record_sheet['N9'].value = self.rtk_table_widget.item(0,16).text()  # 수신기명
+        record_sheet['N10'].value = self.antena_sn.text()  # 안테나 명(번호)
+        
+        # Copy the source sheet data to the new workbook
+        for row in range(survey_count):
+            row_items = []
+            for col in range(self.rtk_table_widget.columnCount()):
+                item = self.rtk_table_widget.item(row, col)
+                row_items.append(item.text())
+
+            record_sheet[f'B{17+row}'].value = row_items[0]   # 번호
+            record_sheet[f'C{17+row}'].value = row % 2 + 1    # 세션
+            record_sheet[f'D{17+row}'].value = row_items[1][2:]   # 관측시간-시작
+            record_sheet[f'G{17+row}'].value = row_items[2][2:]   # 관측시간-종료
+            record_sheet[f'I{17+row}'].value = row_items[4]   # 수평
+            record_sheet[f'K{17+row}'].value = row_items[5]   # 수직
+            record_sheet[f'L{17+row}'].value = 1.8            # 안테나고
+            record_sheet[f'M{17+row}'].value = f'{row_items[13]}:.2f'  # PDOP
+            record_sheet[f'O{17+row}'].value = row_items[17]  # 위성수
+            record_sheet[f'P{17+row}'].value = '15˚'  # 위성고도각
+
+        # cell merge
+        for row in range(17, 17+ survey_count, 2):
+            record_sheet.merge_cells(f'B{row}:B{row+1}')
+                       
+        # Save the new workbook
+        new_wb.save(record_file)
+        self.status_message.setText(f"'{sheet_name}' sheet copied to '{record_file}' successfully.")
+
+    def rtk_result(self):
+        """ 위성관측결과부 작성 """
+        record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_관측결과부.xlsx'
+        template_path = "RTK_TEMPLATE.xlsx"
+        sheet_name = '@관측결과부'
+
+        # Load the template workbook
+        copy2(template_path, record_file)
+        new_wb = load_workbook(record_file)
+        
+        # Ensure the specified sheet exists
+        if sheet_name not in new_wb.sheetnames:
+            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
+        
+        # Get the sheet to copy
+        record_sheet = new_wb[sheet_name]
+
+        # Remove the default sheet created in the new workbook
+        for sht in new_wb.sheetnames:
+            if sheet_name != sht:
+                del new_wb[sht]        
+
+        survey_count = self.rtk_table_widget.rowCount()//2
+        copy_row_with_merge(record_sheet, 17, 17, survey_count-1)
+
+        # set font, alignment, border style
+        set_font(record_sheet[f"B17:P{17 + survey_count-1}"], sz=9)
+        set_alignment(record_sheet[f"B17:P{17 + survey_count-1}"], horizontal='center', vertical='center')
+        set_border(record_sheet[f"B17:P{17 + survey_count-1}"], edges=["all"], border_style='thin')
+        
+        for col in range(17, 17+ survey_count):
+            record_sheet.row_dimensions[col].height = 20
+
+        # 관측 정보 입력
+        record_sheet['E3'].value = "세계측지계"  # 지구명
+        record_sheet['E4'].value = self.jigu_name.text()  # 지구명
+        record_sheet['E5'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().split(' ')[0])  # 관측일자
+        record_sheet['M5'].value = self.surveyor_name.text()  # 관측자
+        record_sheet['E6'].value = "중부원점"  # 투영원점
+        
+        # Copy the source sheet data to the new workbook
+        for row in range(0, self.rtk_table_widget.rowCount(), 2):
+            row_items = []
+            for col in range(self.rtk_table_widget.columnCount()):
+                item = self.rtk_table_widget.item(row, col)
+                row_items.append(item.text())
+
+            record_sheet[f'B{17+row//2}'].value = row // 2 + 1   # 순번
+            record_sheet[f'C{17+row//2}'].value = row_items[0]   # 점명
+            record_sheet[f'D{17+row//2}'].value = convert_decimal_to_roundup_angle(row_items[6])   # 위도
+            record_sheet[f'F{17+row//2}'].value = convert_decimal_to_roundup_angle(row_items[7])   # 경도
+            record_sheet[f'H{17+row//2}'].value = row_items[8]   # 타원체고
+            record_sheet[f'J{17+row//2}'].value = f'{np.round(float(row_items[9]), 2):.2f}'   # X
+            record_sheet[f'L{17+row//2}'].value = f'{np.round(float(row_items[10]), 2):.2f}'  # Y
+            record_sheet[f'N{17+row//2}'].value = row_items[11]  # 표고
+            record_sheet[f'P{17+row//2}'].value = ''             # 비고 
+
+        # Save the new workbook
+        new_wb.save(record_file)
+        self.status_message.setText(f"'{sheet_name}' sheet copied to '{record_file}' successfully.")
+
+    def rtk_ilram(self):
+        """ 지적기준점 일람표 작성 """
+        record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_기준점일람표.xlsx'
+        template_path = "RTK_TEMPLATE.xlsx"
+        sheet_name = '@기준점일람표'
+
+        # Load the template workbook
+        copy2(template_path, record_file)
+        new_wb = load_workbook(record_file)
+        
+        # Ensure the specified sheet exists
+        if sheet_name not in new_wb.sheetnames:
+            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
+        
+        # Get the sheet to copy
+        record_sheet = new_wb[sheet_name]
+
+        # Remove the default sheet created in the new workbook
+        for sht in new_wb.sheetnames:
+            if sheet_name != sht:
+                del new_wb[sht]        
+
+        survey_count = self.rtk_table_widget.rowCount()//2
+        copy_row_with_merge(record_sheet, 17, 17, survey_count-1)
+
+        # set font, alignment, border style
+        set_font(record_sheet[f"A4:O{4 + survey_count-1}"], sz=9)
+        set_alignment(record_sheet[f"A4:O{4 + survey_count-1}"], horizontal='center', vertical='center')
+        set_border(record_sheet[f"A4:O{4 + survey_count-1}"], edges=["all"], border_style='thin')
+
+        # Copy the source sheet data to the new workbook
+        for row in range(0, self.rtk_table_widget.rowCount(), 2):
+            row_items = []
+            for col in range(self.rtk_table_widget.columnCount()):
+                item = self.rtk_table_widget.item(row, col)
+                row_items.append(item.text())
+
+            record_sheet[f'A{4+row//2}'].value = row // 2 + 1   # 연번
+            record_sheet[f'B{4+row//2}'].value = "지적도근점"   # 명칭
+            record_sheet[f'C{4+row//2}'].value = row_items[0]   # 번호(점명)
+            record_sheet[f'D{4+row//2}'].value = "신설"   # 구분 
+            record_sheet[f'E{4+row//2}'].value = f'{np.round(float(row_items[9]), 2):.2f}'   # X
+            record_sheet[f'F{4+row//2}'].value = f'{np.round(float(row_items[10]), 2):.2f}'  # Y
+            record_sheet[f'G{4+row//2}'].value = "중부"   # 원점명 
+            record_sheet[f'H{4+row//2}'].value = row_items[11]  # 표고
+            record_sheet[f'I{4+row//2}'].value = convert_decimal_to_roundup_angle(row_items[6])   # 위도
+            record_sheet[f'J{4+row//2}'].value = convert_decimal_to_roundup_angle(row_items[7])   # 경도
+            record_sheet[f'K{4+row//2}'].value = ' '.join([row_items[21], row_items[22]]).replace('경기도 용인시 처인구 ', '')   # 소재지
+            record_sheet[f'L{4+row//2}'].value = row_items[8].strip().split(' ')[0]   # 설치일자
+            record_sheet[f'M{4+row//2}'].value = row_items[20]  # 재질
+            record_sheet[f'N{4+row//2}'].value = ''   # 비고
+            record_sheet[f'O{4+row//2}'].value = self.surveyor_name.text()  # 팀명
+
+        set_border(record_sheet[f"A1:O{4 + survey_count-1}"], edges=["outer"], border_style='medium', reset=False)
+
+        # Save the new workbook
+        new_wb.save(record_file)
+        self.status_message.setText(f"'{sheet_name}' sheet copied to '{record_file}' successfully.")
+
+    def rtk_apply(self):
+        # 공통값 입력 
+        self.install_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().split(' ')[0])
+        self.survey_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().split(' ')[0])
+        self.surveyor_position_input.setText(self.surveyor_grade.text())
+        self.surveyor_input.setText(self.surveyor_name.text())
+        self.findings_input.setText('신설')
+        self.origin_input.setPlaceholderText('원점')
+        self.origin_input.setText('세계측지계(중부)')
+
+        # copy rtk_table to another table
+        self.table_widget.clearContents()
+        row_count = self.rtk_table_widget.rowCount()//2
+        self.table_widget.setRowCount(row_count)
+
+        headers = {'번호':'점번호', 'X':'X', 'Y':'Y', '위도':'경위도(B)', '경도':'경위도(L)', 'Z':'표고', '토지소재(동리)':'토지소재(동리)', 
+                   '토지소재(지번)':'토지소재(지번)', '지적(임야)도':'지적(임야)도', '재질':'표지재질'}
+        
+        for rtk_header, table_header in headers.items():
+            self.copy_columns(self.rtk_table_widget, self.table_widget, rtk_header, table_header)
+
+    def copy_columns(self, source_table: QTableWidget, target_table: QTableWidget, source_header: str, target_header: str = None):
+        """
+        source_table의 "Column A" 데이터를 target_table의 "Column A"에 복사합니다.
+        
+        :param source_table: 복사할 데이터를 가지고 있는 QTableWidget
+        :param target_table: 데이터를 붙여넣을 QTableWidget
+        :param column_a_index: "Column A"의 인덱스
+        """
+        target_header = source_header if target_header is None else target_header
+        row_count = self.rtk_table_widget.rowCount()
+
+        # source_table의 "Column A" 데이터를 복사하여 target_table에 붙여넣기
+        #rtk_header index
+        rtk_index = self._headerindex(source_header, self.RTK_HEADERS)
+        #table_header index
+        table_index = self._headerindex(target_header, self.HEADER_LABELS)
+        for row in range(0, row_count, 2):
+            item = source_table.item(row, rtk_index)
+            if item:  # 값이 있을 경우
+                new_item = QTableWidgetItem(item)
+            else:  # 값이 없을 경우 빈 셀로 처리
+                new_item = QTableWidgetItem("")
+                new_item.setTextAlignment(Qt.AlignCenter)
+            
+            target_table.setItem(row//2, table_index, new_item)
+        
+        self.common_input_button.setChecked(True)
 
     def load_table_from_pickle(self, table_widget: QTableWidget, file_path: str):
         try:
@@ -995,8 +1587,8 @@ class CcpManager(QMainWindow):
                         {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' ', 'postfix': "번지"}},  
                         {'fields': '지적(임야)도', 'address': 'Z5', "callback":str_deco, 'kargs':{"postfix":"호"}},
                         {'fields': '설치년월일', 'address': 'A8', 'callback': hangul_date},
-                        {'fields': 'X', 'address': 'B9'},
-                        {'fields': 'Y', 'address': 'F9'},
+                        {'fields': 'X', 'address': 'B9', 'callback':osa},
+                        {'fields': 'Y', 'address': 'F9', 'callback':osa},
                         {'fields': '경위도(B)', 'address': 'M9', 'callback':toBL},
                         {'fields': '경위도(L)', 'address': 'W9', 'callback':toBL},
                         {'fields': '원점', 'address': 'B14'},
@@ -1027,8 +1619,10 @@ class CcpManager(QMainWindow):
             dialog.tr = self.tr
         dialog.exec()
 
-    def _headerindex(self, label:str) -> int:
-        return self.HEADER_LABELS.index(label)
+    def _headerindex(self, label:str, listofheaders = None) -> int:
+        listofheaders = self.HEADER_LABELS if listofheaders is None else listofheaders
+
+        return listofheaders.index(label)
     
 
 if __name__ == "__main__":

@@ -206,10 +206,10 @@ class CifGeoDataFrame:
 
 
 if __name__ == "__main__":
-    # cif = "4146110700000_마평동414-3_복호.Cif"
-    # cif_df = CifGeoDataFrame(cif).convert_to_geodataframe()
-    # print(cif_df)
+    cif = "4146110700000_마평동414-3_복호.Cif"
+    cif_df = CifGeoDataFrame(cif).convert_to_geodataframe()
+    print(cif_df)
 
-    cif_loader = CifGeoDataFrame()
-    name = cif_loader.pnu2jibun('4146110700200030025')
-    print(name)
+    # cif_loader = CifGeoDataFrame()
+    # name = cif_loader.pnu2jibun('4146110700200030025')
+    # print(name)

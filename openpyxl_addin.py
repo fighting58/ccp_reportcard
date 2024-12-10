@@ -11,6 +11,7 @@ from copy import copy
 import ctypes
 import shutil
 import numpy as np
+from datetime import datetime, timedelta
 
 from tkinter import Tk
 from tkinter.font import Font as TkFont
@@ -309,7 +310,7 @@ def copyRange(sheet, rngstr: str) -> dict:
         # Adds the RowSelected List and nests inside the rangeSelected
         rangeSelected.append(rowSelected)
     in_merged_cells = []
-    merged_cells = copy(ws.merged_cells)
+    merged_cells = copy(sheet.merged_cells)
     # 병합 셀 정보
     for m_cell in merged_cells:
         if rng.issuperset(m_cell):
@@ -544,6 +545,111 @@ def _text_width(sht: openpyxl.worksheet.worksheet.Worksheet, col_ref: str) -> fl
     # print(text_width)
     # 열너비는 선형회귀를 돌려서 새로 지정
     return max(text_width) * 0.8837 + 1.8 if text_width else MIN_WIDTH
+
+def copy_row_with_merge(ws: openpyxl.worksheet.worksheet.Worksheet, source_row: int, target_row: int, repeat: int):
+    """
+    특정 행을 복사하여 지정된 행에 반복 삽입하는 함수
+    
+    :param ws: 작업 중인 워크시트
+    :param source_row: 복사할 원본 행 번호
+    :param target_row: 삽입할 대상 행 번호
+    :param repeat: 반복 횟수
+    """
+    # 원본 행의 병합된 셀 찾기
+    merged_cells_in_source = [
+        merged_range for merged_range in ws.merged_cells.ranges 
+        if merged_range.min_row == source_row and merged_range.max_row == source_row
+    ]
+    # 원본 행의 데이터와 서식 복사
+    row_data = []
+    row_styles = []
+
+    for col in range(1, ws.max_column + 1):
+        cell = ws.cell(row=source_row, column=col)
+        row_data.append(cell.value)
+        row_styles.append({
+            'font': copy(cell.font),
+            'fill': copy(cell.fill),
+            'border': copy(cell.border),
+            'alignment': copy(cell.alignment),
+            'number_format': cell.number_format
+        })
+
+    # 지정된 횟수만큼 반복
+    for _ in range(repeat):
+        # 대상 행에 새 행 삽입
+        ws.insert_rows(target_row)
+        # 복사한 데이터와 스타일 적용
+        for col in range(1, len(row_data)+1):
+            new_cell = ws.cell(row=target_row, column=col)
+            new_cell.value = row_data[col-1]
+            
+            # 스타일 복사
+            new_cell.font = row_styles[col-1]['font']
+            new_cell.fill = row_styles[col-1]['fill']
+            new_cell.border = row_styles[col-1]['border']
+            new_cell.alignment = row_styles[col-1]['alignment']
+            new_cell.number_format = row_styles[col-1]['number_format']
+
+
+    # 병합된 셀 복사
+    for merged_range in merged_cells_in_source:
+        for n in range(1, repeat+1): 
+            # 병합 범위의 경계 얻기
+            min_col, min_row, max_col, max_row = range_boundaries(str(merged_range))
+            
+            # 새 행 계산
+            new_min_row = min_row + n
+            new_max_row = max_row + n
+            
+            # 새 병합 범위 생성
+            new_merge_range = f"{get_column_letter(min_col)}{new_min_row}:{get_column_letter(max_col)}{new_max_row}"
+            
+            # 병합
+            ws.merge_cells(new_merge_range)
+
+def format_date_to_korean(datetime_str):
+    # 문자열에서 날짜 부분 추출
+    date_str = datetime_str.split(" ")[0]
+    
+    # 날짜를 YYYY, MM, DD로 분리
+    year, month, day = date_str.split("-")
+    
+    # 한국어 형식으로 변환
+    formatted_date = f"{year}년 {int(month):02d}월 {int(day):02d}일"
+    return formatted_date
+
+def convert_angle_to_decimal(angle_str, n=4) -> tuple:
+    # 입력 문자열에서 각도, 분, 초를 분리, 초는 n자리에서 오사오입
+    if not angle_str.endswith('"'):
+        angle_str += '"'
+    angle_str = angle_str.replace("˚", "˚ ").replace("'", "' ")
+    angle_str = angle_str.replace("  ", " ")
+    
+    degrees, minutes, seconds = angle_str.split(' ')
+    
+    # 각도와 분은 정수로 변환
+    degrees = int(degrees[:-1])  # 마지막 글자 '˚' 제거
+    minutes = int(minutes[:-1])  # 마지막 글자 ''' 제거
+    seconds = float(seconds[:-1])  # 마지막 글자 '"' 제거
+
+    # 초를 소수점 4째 자리에서 반올림
+    seconds_rounded = np.round(seconds, n)
+    
+    # 변환된 값 반환
+    return degrees, minutes, seconds_rounded
+
+def convert_decimal_to_angle(degrees, minutes, seconds) -> str:
+    # 각도, 분, 초를 문자열 형식으로 변환
+    angle_str = f"{degrees}˚ {minutes}' {seconds:.4f}\""
+    return angle_str
+    
+def convert_decimal_to_roundup_angle(angle_str, n=4) -> str:    
+    # 각도, 분, 초를 문자열 형식으로 변환
+    degrees, minutes, seconds = convert_angle_to_decimal(angle_str, n)    
+    angle_str = f"{degrees}˚ {minutes}' {seconds:.4f}\""
+    return angle_str
+
 
 if __name__ == '__main__':
 
