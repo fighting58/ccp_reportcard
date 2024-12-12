@@ -3,7 +3,7 @@
         color: white;
         }
     QMainWindow {
-        background-image: url('images/background3.png'); 
+        background-image: url(':resources/images/background3.png'); 
         background-color: #aaa;
         }
     QScrollArea {

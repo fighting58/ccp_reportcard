@@ -6,12 +6,13 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QToolBar, QComboBox, QMenu, QLabel, QColorDialog, QVBoxLayout, QHBoxLayout)
 from PySide6.QtCore import Qt, Signal,Slot, QSize, QRectF, QSizeF, QPointF
 from PySide6.QtGui import QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QPixmap, QFont, QKeyEvent, QFontDatabase, QMouseEvent, QCursor
+import resources
 
 class CustomCursor(QCursor):
     def __init__(self):
         super().__init__()
-        self.pen_cursor = QCursor(QPixmap('images/pen_cursor.svg'), hotX=0, hotY=20)
-        self.text_cursor = QCursor(QPixmap('images/text_cursor.svg'), hotX=0, hotY=0)
+        self.pen_cursor = QCursor(QPixmap(':resources/icons/pen_cursor.svg'), hotX=0, hotY=20)
+        self.text_cursor = QCursor(QPixmap(':resources/icons/text_cursor.svg'), hotX=0, hotY=0)
 
 class Layer:
     def __init__(self, pixmap=None):
@@ -118,15 +119,15 @@ class ImageEditor(QMainWindow):
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         
         # 툴바 아이콘 추가
-        new_action = QAction(QIcon('images/icons/document-add.svg'), '새 문서', self)
+        new_action = QAction(QIcon(':resources/icons/document-add.svg'), '새 문서', self)
         new_action.triggered.connect(self.new_document)
         self.toolbar.addAction(new_action)
 
-        open_action = QAction(QIcon('images/icons/album.svg'), '열기', self)
+        open_action = QAction(QIcon(':resources/icons/album.svg'), '열기', self)
         open_action.triggered.connect(self.open_image)
         self.toolbar.addAction(open_action)
 
-        save_action = QAction(QIcon('images/icons/diskette.svg'), '저장', self)
+        save_action = QAction(QIcon(':resources/icons/diskette.svg'), '저장', self)
         save_action.triggered.connect(self.save_image)
         self.toolbar.addAction(save_action)
 
@@ -152,10 +153,10 @@ class ImageEditor(QMainWindow):
         self.font_style_action.setFont(QFont(self.current_font.family(), pointSize=12))
         self.font_style_action.setMenu(font_style_menu)
         
-        normal_action = QAction(QIcon('images/icons/text.svg'),'Normal', self)
-        bold_action = QAction(QIcon('images/icons/text-bold.svg'), 'Bold', self)
-        italic_action = QAction(QIcon('images/icons/text-italic.svg'), 'Italic', self)
-        bold_italic_action = QAction(QIcon('images/icons/text-italicBold.svg'), 'Bold Italic', self)
+        normal_action = QAction(QIcon(':resources/icons/text.svg'),'Normal', self)
+        bold_action = QAction(QIcon(':resources/icons/text-bold.svg'), 'Bold', self)
+        italic_action = QAction(QIcon(':resources/icons/text-italic.svg'), 'Italic', self)
+        bold_italic_action = QAction(QIcon(':resources/icons/text-italicbold.svg'), 'Bold Italic', self)
 
         normal_action.triggered.connect(lambda: self.change_font_style("Normal"))
         bold_action.triggered.connect(lambda: self.change_font_style("Bold"))
@@ -222,13 +223,13 @@ class ImageEditor(QMainWindow):
         self.toolbar.addSeparator()
 
         # 거리 입력 버튼
-        line_drawing_action = QAction(QIcon('images/icons/pen-2.svg'), '거리 입력', self)
+        line_drawing_action = QAction(QIcon(':resources/icons/pen-2.svg'), '거리 입력', self)
         line_drawing_action.setShortcut(QKeySequence("Ctrl+L"))
         line_drawing_action.triggered.connect(self.start_drawing_line)
         self.toolbar.addAction(line_drawing_action)        
 
         # 텍스트 입력 버튼
-        adding_text_action = QAction(QIcon('images/icons/text-selection.svg'), '텍스트 입력', self)
+        adding_text_action = QAction(QIcon(':resources/icons/text-selection.svg'), '텍스트 입력', self)
         adding_text_action.setShortcut(QKeySequence("Ctrl+T"))
         adding_text_action.triggered.connect(self.start_adding_text)
         self.toolbar.addAction(adding_text_action)   

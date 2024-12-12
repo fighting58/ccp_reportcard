@@ -54,11 +54,11 @@ class CustomToggleButton(QWidget):
 
     def onToggle(self, checked):
         if checked:
-            self.toggleButton.setIcon(QIcon(':/images/toggle-off-circle.svg'))
+            self.toggleButton.setIcon(QIcon(':resources/icons/toggle-off-circle.svg'))
             self.toggleButton.setText("사진 편집 모드")
 
         else:
-            self.toggleButton.setIcon(QIcon(':/images/toggle-on-circle.svg'))
+            self.toggleButton.setIcon(QIcon(':resources/icons/toggle-on-circle.svg'))
             self.toggleButton.setText("표 편집 모드")
         self.stateChanged.emit(checked)
 
@@ -393,7 +393,8 @@ class CcpManager(QMainWindow):
                       '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고', '사진파일(경로)', '사진파일명']
     RTK_HEADERS = ['번호', '시작', '종료', '에포크', '수평', '수직', '위도', '경도', '타원체고', 'X', 'Y', 'Z', '지오이드고',
                    'PDOP', 'HDOP', 'VDOP', '장비', '위성수', '솔루션', '사진', '재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도']
-    TEMPLATE = 'template.xlsx'
+    TEMPLATE = ':resources/templates/template.xlsx'
+    RTK_TEMPLATE = ':resources/templates/RTK_TEMPLATE.xlsx'
 
     def __init__(self):
         super().__init__()
@@ -427,7 +428,7 @@ class CcpManager(QMainWindow):
 
         # RTK 관측부 ==========
         vlayout_rtk = QVBoxLayout()
-        self.input_rtkdata_button = QPushButton(QIcon("images/icons/satellite.svg"), f'  {"RTK 기록부 외":^8}', side_container)
+        self.input_rtkdata_button = QPushButton(QIcon(":resources/icons/satellite.svg"), f'  {"RTK 기록부 외":^8}', side_container)
         self.input_rtkdata_button.setIconSize(QSize(32, 32))
         self.input_rtkdata_button.setObjectName("input_rtkdata_button")
         self.input_rtkdata_button.setCheckable(True)
@@ -439,16 +440,16 @@ class CcpManager(QMainWindow):
         self.rtk_data_sub.setFixedHeight(440)
         rtk_data_sub_layout = QVBoxLayout()
         # rtk_data_sub_layout.setSpacing(15)
-        self.rtk_xlsx_button = QPushButton(QIcon(':images/icons/xlsx-file.svg'), f'  {"관측데이터(xlsx)":^12} ', side_container)
+        self.rtk_xlsx_button = QPushButton(QIcon(':resources/icons/xlsx-file.svg'), f'  {"관측데이터(xlsx)":^12} ', side_container)
         self.rtk_xlsx_button.setIconSize(QSize(24,24))
         rtk_label1 = QLabel(side_container)        
         rtk_label1.setText("└ 번호,재질 수정/입력")
         rtk_label1.setAlignment(Qt.AlignRight)
-        self.rtk_sort_button = QPushButton(QIcon('images/icons/sort-from-top-to-bottom.svg'), f' {"번호-시작 정렬":^12}', side_container)
+        self.rtk_sort_button = QPushButton(QIcon(':resources/icons/sort-from-top-to-bottom.svg'), f' {"번호-시작 정렬":^12}', side_container)
         self.rtk_sort_button.setIconSize(QSize(24,24))
-        self.rtk_timecheck_button=QPushButton(QIcon('images/icons/clock-circle.svg'), f'   {"타임 조정":^12}   ', side_container)
+        self.rtk_timecheck_button=QPushButton(QIcon(':resources/icons/clock-circle.svg'), f'   {"타임 조정":^12}   ', side_container)
         self.rtk_timecheck_button.setIconSize(QSize(24,24))
-        self.rtk_cif_button = QPushButton(QIcon(':images/icons/cif-file.svg'), f'    {"Cif 입력":^12}     ', side_container)
+        self.rtk_cif_button = QPushButton(QIcon(':resources/icons/cif-file.svg'), f'    {"Cif 입력":^12}     ', side_container)
         self.rtk_cif_button.setIconSize(QSize(24,24))
         self.jigu_name = QLineEdit(side_container)  # 지구명
         self.jigu_attr = QLineEdit(side_container)  # 지구특성      
@@ -473,11 +474,11 @@ class CcpManager(QMainWindow):
         rtk_data_sub_layout.addWidget(self.surveyor_grade)
         rtk_data_sub_layout.addWidget(self.surveyor_name)
 
-        self.rtk_record_button = QPushButton(QIcon('images/icons/document-add.svg'), f'   {"관측 기록부":^8}   ', side_container)
+        self.rtk_record_button = QPushButton(QIcon(':resources/icons/document-add.svg'), f'   {"관측 기록부":^8}   ', side_container)
         self.rtk_record_button.setIconSize(QSize(24,24))
-        self.rtk_result_button = QPushButton(QIcon('images/icons/document-medicine.svg'), f'   {"관측 결과부":^8}   ', side_container)
+        self.rtk_result_button = QPushButton(QIcon(':resources/icons/document-medicine.svg'), f'   {"관측 결과부":^8}   ', side_container)
         self.rtk_result_button.setIconSize(QSize(24,24))
-        self.rtk_ilram_button = QPushButton(QIcon('images/icons/document.svg'), f'  {"기준점일람표":^8}  ', side_container)
+        self.rtk_ilram_button = QPushButton(QIcon(':resources/icons/document.svg'), f'  {"기준점일람표":^8}  ', side_container)
         self.rtk_ilram_button.setIconSize(QSize(24,24))
 
         rtk_data_sub_layout.addWidget(self.rtk_record_button)
@@ -486,7 +487,7 @@ class CcpManager(QMainWindow):
 
         rtk_hlayout = QHBoxLayout()
         rtk_hspacer = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.rtk_apply_button = QPushButton(QIcon(':images/icons/cpu.svg'), f'  {"데이터전환"}  ', side_container)
+        self.rtk_apply_button = QPushButton(QIcon(':resources/icons/cpu.svg'), f'  {"데이터전환"}  ', side_container)
         self.rtk_apply_button.setIconSize(QSize(24,24))
 
         rtk_hlayout.addItem(rtk_hspacer)
@@ -502,7 +503,7 @@ class CcpManager(QMainWindow):
 
         # 데이터 입력 ==========
         vlayout_data = QVBoxLayout()
-        self.input_data_button = QPushButton(QIcon(':images/icons/file-text.svg'), f'  {"데이터 입력":^8}', side_container)  
+        self.input_data_button = QPushButton(QIcon(':resources/icons/file-text.svg'), f'  {"데이터 입력":^8}', side_container)  
         self.input_data_button.setIconSize(QSize(32, 32))
         self.input_data_button.setObjectName("input_data_button")
         self.input_data_button.setCheckable(True)
@@ -514,9 +515,9 @@ class CcpManager(QMainWindow):
         self.input_data_sub.setFixedHeight(100)
         input_data_sub_layout = QVBoxLayout()
         input_data_sub_layout.setSpacing(15)
-        self.tr_dat_button = QPushButton(QIcon(':images/icons/target.svg'), f'    {"tr.dat 입력":^12}     ', side_container)        
+        self.tr_dat_button = QPushButton(QIcon(':resources/icons/target.svg'), f'    {"tr.dat 입력":^12}     ', side_container)        
         self.tr_dat_button.setIconSize(QSize(24,24))
-        self.load_project_button = QPushButton(QIcon(':images/icons/file-right.svg'), f' {"기존 프로젝트":^12}  ', side_container)
+        self.load_project_button = QPushButton(QIcon(':resources/icons/file-right.svg'), f' {"기존 프로젝트":^12}  ', side_container)
         self.load_project_button.setIconSize(QSize(24,24))
         input_data_sub_layout.addWidget(self.tr_dat_button)
         input_data_sub_layout.addWidget(self.load_project_button)
@@ -529,7 +530,7 @@ class CcpManager(QMainWindow):
         
         # 공통값 입력 ==========
         vlayout_common = QVBoxLayout()
-        self.common_input_button = QPushButton(QIcon(':images/icons/bill-list.svg'), f'  {"공통값 입력":^8}', side_container)
+        self.common_input_button = QPushButton(QIcon(':resources/icons/bill-list.svg'), f'  {"공통값 입력":^8}', side_container)
         self.common_input_button.setIconSize(QSize(32, 32))
         self.common_input_button.setObjectName("common_input_button")
         self.common_input_button.setCheckable(True)
@@ -571,7 +572,7 @@ class CcpManager(QMainWindow):
 
         hlayout1 = QHBoxLayout()
         hspacer1 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.common_apply_button = QPushButton(QIcon(':images/icons/cpu.svg'), '  적용', side_container)
+        self.common_apply_button = QPushButton(QIcon(':resources/icons/cpu.svg'), '  적용', side_container)
         self.common_apply_button.setIconSize(QSize(24,24))
         hlayout1.addItem(hspacer1)
         hlayout1.addWidget(self.common_apply_button)
@@ -586,7 +587,7 @@ class CcpManager(QMainWindow):
 
         # 사진관리 ================
         vlayout_image = QVBoxLayout()
-        self.image_management_button = QPushButton(QIcon(':images/icons/gallery-wide.svg'), f'  {"이미지 삽입":^8}', side_container)
+        self.image_management_button = QPushButton(QIcon(':resources/icons/gallery-wide.svg'), f'  {"이미지 삽입":^8}', side_container)
         self.image_management_button.setIconSize(QSize(32, 32))
         self.image_management_button.setObjectName("image_management_button")
         self.image_management_button.setCheckable(True)
@@ -598,7 +599,7 @@ class CcpManager(QMainWindow):
         image_management_sub.setFixedHeight(230)
         image_management_sub_layout = QVBoxLayout()
 
-        self.get_image_button = QPushButton(QIcon(':images/icons/album.svg'), '  사진폴더 선택', side_container)
+        self.get_image_button = QPushButton(QIcon(':resources/icons/album.svg'), '  사진폴더 선택', side_container)
         self.get_image_button.setIconSize(QSize(24,24))
         extension_group = QGroupBox(side_container)
         extension_group.setTitle('확장자')
@@ -616,7 +617,7 @@ class CcpManager(QMainWindow):
         self.same_filename_check.setChecked(True)
         hlayout2 = QHBoxLayout()
         hspacer2 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.image_apply_button = QPushButton(QIcon(':images/icons/cpu.svg'), '  적용', side_container)
+        self.image_apply_button = QPushButton(QIcon(':resources/icons/cpu.svg'), '  적용', side_container)
         self.image_apply_button.setIconSize(QSize(24,24))
         hlayout2.addItem(hspacer2)
         hlayout2.addWidget(self.image_apply_button)
@@ -634,7 +635,7 @@ class CcpManager(QMainWindow):
 
         # 토지소재지 입력 ==================
         vlayout_land = QVBoxLayout()
-        self.land_data_button = QPushButton(QIcon(':images/icons/streets-map-point.svg'), f'  {"소재지 검색":^8}', side_container)
+        self.land_data_button = QPushButton(QIcon(':resources/icons/streets-map-point.svg'), f'  {"소재지 검색":^8}', side_container)
         self.land_data_button.setIconSize(QSize(32, 32))
         self.land_data_button.setObjectName("land_data_button")
         self.land_data_button.setCheckable(True)
@@ -646,9 +647,9 @@ class CcpManager(QMainWindow):
         land_data_sub.setFixedHeight(100)
         land_data_sub_layout = QVBoxLayout()
         land_data_sub_layout.setSpacing(15)
-        self.cif_button = QPushButton(QIcon(':images/icons/cif-file.svg'), '   Cif에서 검색', side_container)
+        self.cif_button = QPushButton(QIcon(':resources/icons/cif-file.svg'), '   Cif에서 검색', side_container)
         self.cif_button.setIconSize(QSize(24,24))        
-        self.shp_button = QPushButton(QIcon(':images/icons/shape-file.svg'), '  Shp에서 검색', side_container)
+        self.shp_button = QPushButton(QIcon(':resources/icons/shape-file.svg'), '  Shp에서 검색', side_container)
         self.shp_button.setIconSize(QSize(24,24))
         land_data_sub_layout.addWidget(self.cif_button)
         land_data_sub_layout.addWidget(self.shp_button)
@@ -662,7 +663,7 @@ class CcpManager(QMainWindow):
 
         # 내보내기 ==================
         vlayout_export = QVBoxLayout()
-        self.export_button = QPushButton(QIcon(':images/icons/ssd-round.svg'), f'   {"내보내기":^8} ', side_container)
+        self.export_button = QPushButton(QIcon(':resources/icons/ssd-round.svg'), f'   {"내보내기":^8} ', side_container)
         self.export_button.setIconSize(QSize(32, 32))
         self.export_button.setObjectName("export_button")
         self.export_button.setCheckable(True)
@@ -674,9 +675,9 @@ class CcpManager(QMainWindow):
         export_data_sub.setFixedHeight(100)
         export_data_sub_layout = QVBoxLayout()
         export_data_sub_layout.setSpacing(15)
-        self.export_project_button = QPushButton(QIcon(':images/icons/file-left.svg'), '   프로젝트 저장 ', side_container)
+        self.export_project_button = QPushButton(QIcon(':resources/icons/file-left.svg'), '   프로젝트 저장 ', side_container)
         self.export_project_button.setIconSize(QSize(24,24))
-        self.export_xlsx_button = QPushButton(QIcon(':images/icons/xlsx-file.svg'), '  성과표 엑셀저장', side_container)
+        self.export_xlsx_button = QPushButton(QIcon(':resources/icons/xlsx-file.svg'), '  성과표 엑셀저장', side_container)
         self.export_xlsx_button.setIconSize(QSize(24,24))
         export_data_sub_layout.addWidget(self.export_project_button)
         export_data_sub_layout.addWidget(self.export_xlsx_button)
@@ -691,7 +692,7 @@ class CcpManager(QMainWindow):
 
         # 기타 툴 ==================
         vlayout_extra = QVBoxLayout()
-        self.extra_tools_button = QPushButton(QIcon(':images/icons/settings.svg'), f'  {"기타 툴들":^8} ', side_container)
+        self.extra_tools_button = QPushButton(QIcon(':resources/icons/settings.svg'), f'  {"기타 툴들":^8} ', side_container)
         self.extra_tools_button.setIconSize(QSize(32, 32))
         self.extra_tools_button.setObjectName("extra_tools")
         self.extra_tools_button.setCheckable(True)
@@ -703,9 +704,9 @@ class CcpManager(QMainWindow):
         extra_tools_sub.setFixedHeight(100)
         extra_tools_sub_layout = QVBoxLayout()
         extra_tools_sub_layout.setSpacing(15)
-        self.update_code_button = QPushButton(QIcon(':images/icons/server-square-update.svg'), '법정동코드 업데이트', side_container)
+        self.update_code_button = QPushButton(QIcon(':resources/icons/server-square-update.svg'), '법정동코드 업데이트', side_container)
         self.update_code_button.setIconSize(QSize(24,24))
-        self.classify_image_button = QPushButton(QIcon(':images/icons/gallery-edit.svg'), '  사진파일명 변경   ', side_container)
+        self.classify_image_button = QPushButton(QIcon(':resources/icons/gallery-edit.svg'), '  사진파일명 변경   ', side_container)
         self.classify_image_button.setIconSize(QSize(24,24))
         extra_tools_sub_layout.addWidget(self.update_code_button)
         extra_tools_sub_layout.addWidget(self.classify_image_button)
@@ -865,26 +866,26 @@ class CcpManager(QMainWindow):
         menubar = self.menuBar()
         file_menu = menubar.addMenu('파일')
 
-        new_action = QAction(QIcon(':/icons/document-add-svgrepo-com.svg'), '새 문서', self)
+        new_action = QAction(QIcon(':resources/icons/document-add-svgrepo-com.svg'), '새 문서', self)
         # new_action.triggered.connect(self.new_document)
         file_menu.addAction(new_action)
 
-        open_action = QAction(QIcon(':/icons/album-svgrepo-com.svg'), '열기', self)
+        open_action = QAction(QIcon(':resources/icons/album-svgrepo-com.svg'), '열기', self)
         # open_action.triggered.connect(self.open_image)
         file_menu.addAction(open_action)
 
-        save_action = QAction(QIcon(':/icons/diskette-svgrepo-com.svg'), '저장', self)
+        save_action = QAction(QIcon(':resources/icons/diskette-svgrepo-com.svg'), '저장', self)
         # save_action.triggered.connect(self.save_image)
         file_menu.addAction(save_action)
 
         view_menu = menubar.addMenu('보기')
-        self.show_layer_action = QAction(QIcon(':/icons/layers-svgrepo-com.svg'), '레이어', self)
+        self.show_layer_action = QAction(QIcon(':resources/icons/layers-svgrepo-com.svg'), '레이어', self)
         # self.show_layer_action.triggered.connect(self.show_layer_win)
         self.show_layer_action.setEnabled(False)
-        self.show_explorer_action = QAction(QIcon(':/icons/library-svgrepo-com.svg'), "탐색기", self)
+        self.show_explorer_action = QAction(QIcon(':resources/icons/library-svgrepo-com.svg'), "탐색기", self)
         # self.show_explorer_action.triggered.connect(self.show_explorer_win)
         self.show_explorer_action.setEnabled(False)
-        self.show_preview_action = QAction(QIcon(':/icons/gallery-svgrepo-com.svg'), "미리보기", self)
+        self.show_preview_action = QAction(QIcon(':resources/icons/gallery-svgrepo-com.svg'), "미리보기", self)
         # self.show_preview_action.triggered.connect(self.show_preview_win)
         self.show_preview_action.setEnabled(False)
         view_menu.addAction(self.show_layer_action)
@@ -1124,7 +1125,7 @@ class CcpManager(QMainWindow):
     def rtk_record(self):
         """ 위성관측기록부 작성 """
         record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_관측기록부.xlsx'
-        template_path = "RTK_TEMPLATE.xlsx"
+        template_path = self.RTK_TEMPLATE
         sheet_name = '@관측기록부'
 
         # Load the template workbook
@@ -1196,7 +1197,7 @@ class CcpManager(QMainWindow):
     def rtk_result(self):
         """ 위성관측결과부 작성 """
         record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_관측결과부.xlsx'
-        template_path = "RTK_TEMPLATE.xlsx"
+        template_path = self.RTK_TEMPLATE
         sheet_name = '@관측결과부'
 
         # Load the template workbook
@@ -1257,7 +1258,7 @@ class CcpManager(QMainWindow):
     def rtk_ilram(self):
         """ 지적기준점 일람표 작성 """
         record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_기준점일람표.xlsx'
-        template_path = "RTK_TEMPLATE.xlsx"
+        template_path = self.RTK_TEMPLATE
         sheet_name = '@기준점일람표'
 
         # Load the template workbook
@@ -1521,7 +1522,7 @@ class CcpManager(QMainWindow):
                     return
                 
                 for i in range(self.table_widget.rowCount()):
-                    location = find_attributes_containing_point(gdf, (float(self.table_widget.item(i, 2).text()), float(self.table_widget.item(i, 1).text())), ["PNU", "JIBUN", "DOM"])
+                    location = find_attributes_containing_point(gdf, (float(self.table_widget.item(i, 2).text()), float(self.table_widget.item(i, 1).text())), ["PNU", "JIBUNJIMOK", "DOHO"])
                     if not location is None:
                         pnu, jibun, dom = location.iloc[0, :]
                         self.table_widget.item(i, 6).setText(CifGeoDataFrame().getDistrictName(pnu))
@@ -1601,7 +1602,7 @@ class CcpManager(QMainWindow):
             ]  
 
             # 실제 성과표 작성
-            reporter = ReportFromDataframe(template='template.xlsx', sheetname='서식', savefile=fileName, dataframe=table_df, 
+            reporter = ReportFromDataframe(template=self.TEMPLATE, sheetname='서식', savefile=fileName, dataframe=table_df, 
                                           max_row=26, border_settings=border_settings, mappings=mappings)
             reporter.report()
             self.status_message.setText(f"성과표가 성공적으로 저장되었습니다: {fileName}")

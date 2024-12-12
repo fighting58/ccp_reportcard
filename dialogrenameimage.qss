@@ -1,9 +1,10 @@
 QWidget { 
     color: white;
-    background-color: transparent; }
+    background-color: transparent;
+    }
 
 #dialogrenameimage { 
-    background-image: url('images/background3.png'); 
+    background-image: url(':resources/images/background3.png');
     padding: 3px;
     border: 3px solid white;
     }
