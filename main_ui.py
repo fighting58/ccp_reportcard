@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, 
                                 QSizePolicy, QAbstractItemView, QMenu, QLabel)
-from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize
+from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize, QFile, QIODevice
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
 import resources
 import pickle   
@@ -23,7 +23,6 @@ from custom_image_editor import ImageEditor
 from rename_image_with_tr import DialogRenameImage
 from openpyxl import load_workbook
 from openpyxl.workbook import Workbook
-from shutil import copy2
 from openpyxl_addin import set_alignment, set_border, set_font, copyRange, pasteRange, copy_row_with_merge, format_date_to_korean, convert_decimal_to_roundup_angle
 from datetime import datetime, timedelta
 import random
@@ -979,6 +978,7 @@ class CcpManager(QMainWindow):
             self.rtk_data_sub.hide()
             self.rtk_table_widget.hide()
             self.table_widget.show()
+
     def input_data_toggle(self):
         if self.input_data_button.isChecked():
             self.input_data_sub.setVisible(True)
@@ -986,6 +986,18 @@ class CcpManager(QMainWindow):
             self.table_widget.show()
         else:
             self.input_data_sub.hide()
+
+    # 리소스에서 파일을 복사하는 함수
+    def copy_resource_to_file(self, resource_path, destination_path):
+        resource = QFile(resource_path)
+        if not resource.open(QIODevice.OpenModeFlag.ReadOnly):
+            print(f"리소스 파일을 열 수 없습니다: {resource_path}")
+            return  False
+
+        with open(destination_path, 'wb') as dest_file:
+            dest_file.write(resource.readAll())
+        
+        return True
 
     def loadRTKdata(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Excel 파일 선택", "", "Excel Files (*.xlsx)")
@@ -1042,16 +1054,17 @@ class CcpManager(QMainWindow):
         survey_count = self.rtk_table_widget.rowCount()
 
         for row in range(survey_count):
-            t1 = self.rtk_table_widget.item(row, 1).text()
-            t2 = self.rtk_table_widget.item(row, 2).text()
+            t1 = self.rtk_table_widget.item(row, 1).text().strip()
+            t2 = self.rtk_table_widget.item(row, 2).text().strip()
             t_diff = self.calculate_time_difference(t1, t2, unit='seconds')
+
             if t_diff < 60:
                 self.rtk_table_widget.item(row, 2).setText(self.add_time_to_datetime(t1, seconds= random.randrange(61, 70)))
                 self.rtk_table_widget.item(row, 2).setForeground(Qt.red)
         # 관측간 간격
         for row in range(0, survey_count, 2):
-            t1 = self.rtk_table_widget.item(row, 1).text()
-            t2 = self.rtk_table_widget.item(row+1, 1).text()
+            t1 = self.rtk_table_widget.item(row, 1).text().strip()
+            t2 = self.rtk_table_widget.item(row+1, 1).text().strip()
             t_diff = self.calculate_time_difference(t1, t2, unit='seconds')
             if t_diff < 3600:
                 new_time = self.add_time_to_datetime(t1, seconds= random.randrange(3661, 3900))
@@ -1085,7 +1098,7 @@ class CcpManager(QMainWindow):
         dt2 = datetime.strptime(datetime2, format_str)
         
         # 시간 차이 계산
-        delta = abs(dt2 - dt1)  # 절대값으로 시간 차이 계산
+        delta = dt2 - dt1  # 시간 차이 계산
         
         # 단위에 따라 반환
         if unit == 'seconds':
@@ -1106,7 +1119,7 @@ class CcpManager(QMainWindow):
                     return
                 
                 for i in range(self.rtk_table_widget.rowCount()):
-                    location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "JIBUN", "DOM"])
+                    location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "JIBUNJIMOK", "DOHO"])
                     if not location is None:
                         pnu, jibun, dom = location.iloc[0, :]
                         self.rtk_table_widget.item(i, 21).setText(CifGeoDataFrame().getDistrictName(pnu))
@@ -1124,12 +1137,16 @@ class CcpManager(QMainWindow):
 
     def rtk_record(self):
         """ 위성관측기록부 작성 """
-        record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_관측기록부.xlsx'
+        record_file = self.rtk_table_widget.item(0,1).text().strip().split(' ')[0].replace('-', '') + '_관측기록부.xlsx'
         template_path = self.RTK_TEMPLATE
         sheet_name = '@관측기록부'
 
         # Load the template workbook
-        copy2(template_path, record_file)
+        copy_success = self.copy_resource_to_file(template_path, record_file)
+        if not copy_success:
+            self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
+            raise FileExistsError("파일 복사에 실패했습니다.")
+        
         new_wb = load_workbook(record_file)
         
         # Ensure the specified sheet exists
@@ -1162,7 +1179,7 @@ class CcpManager(QMainWindow):
 
         # 관측 정보 입력
         record_sheet['E3'].value = self.jigu_name.text()  # 지구명
-        record_sheet['E4'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().split(' ')[0])  # 관측일자
+        record_sheet['E4'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().strip().split(' ')[0])  # 관측일자
         record_sheet['N4'].value = self.surveyor_name.text()  # 관측자
         record_sheet['E5'].value = self.jigu_attr.text()  # 지구특성
         record_sheet['N9'].value = self.rtk_table_widget.item(0,16).text()  # 수신기명
@@ -1173,7 +1190,7 @@ class CcpManager(QMainWindow):
             row_items = []
             for col in range(self.rtk_table_widget.columnCount()):
                 item = self.rtk_table_widget.item(row, col)
-                row_items.append(item.text())
+                row_items.append(item.text().strip())
 
             record_sheet[f'B{17+row}'].value = row_items[0]   # 번호
             record_sheet[f'C{17+row}'].value = row % 2 + 1    # 세션
@@ -1182,7 +1199,7 @@ class CcpManager(QMainWindow):
             record_sheet[f'I{17+row}'].value = row_items[4]   # 수평
             record_sheet[f'K{17+row}'].value = row_items[5]   # 수직
             record_sheet[f'L{17+row}'].value = 1.8            # 안테나고
-            record_sheet[f'M{17+row}'].value = f'{row_items[13]}:.2f'  # PDOP
+            record_sheet[f'M{17+row}'].value = f'{float(row_items[13]):.2f}'  # PDOP
             record_sheet[f'O{17+row}'].value = row_items[17]  # 위성수
             record_sheet[f'P{17+row}'].value = '15˚'  # 위성고도각
 
@@ -1196,12 +1213,16 @@ class CcpManager(QMainWindow):
 
     def rtk_result(self):
         """ 위성관측결과부 작성 """
-        record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_관측결과부.xlsx'
+        record_file = self.rtk_table_widget.item(0,1).text().strip().split(' ')[0].replace('-', '') + '_관측결과부.xlsx'
         template_path = self.RTK_TEMPLATE
         sheet_name = '@관측결과부'
 
         # Load the template workbook
-        copy2(template_path, record_file)
+        copy_success = self.copy_resource_to_file(template_path, record_file)
+        if not copy_success:
+            self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
+            raise FileExistsError("파일 복사에 실패했습니다.")
+        
         new_wb = load_workbook(record_file)
         
         # Ensure the specified sheet exists
@@ -1230,7 +1251,7 @@ class CcpManager(QMainWindow):
         # 관측 정보 입력
         record_sheet['E3'].value = "세계측지계"  # 지구명
         record_sheet['E4'].value = self.jigu_name.text()  # 지구명
-        record_sheet['E5'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().split(' ')[0])  # 관측일자
+        record_sheet['E5'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().strip().split(' ')[0])  # 관측일자
         record_sheet['M5'].value = self.surveyor_name.text()  # 관측자
         record_sheet['E6'].value = "중부원점"  # 투영원점
         
@@ -1257,12 +1278,16 @@ class CcpManager(QMainWindow):
 
     def rtk_ilram(self):
         """ 지적기준점 일람표 작성 """
-        record_file = self.rtk_table_widget.item(0,1).text().split(' ')[0].replace('-', '') + '_기준점일람표.xlsx'
+        record_file = self.rtk_table_widget.item(0,1).text().strip().split(' ')[0].replace('-', '') + '_기준점일람표.xlsx'
         template_path = self.RTK_TEMPLATE
         sheet_name = '@기준점일람표'
 
         # Load the template workbook
-        copy2(template_path, record_file)
+        copy_success = self.copy_resource_to_file(template_path, record_file)
+        if not copy_success:
+            self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
+            raise FileExistsError("파일 복사에 실패했습니다.")
+        
         new_wb = load_workbook(record_file)
         
         # Ensure the specified sheet exists
@@ -1316,8 +1341,8 @@ class CcpManager(QMainWindow):
 
     def rtk_apply(self):
         # 공통값 입력 
-        self.install_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().split(' ')[0])
-        self.survey_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().split(' ')[0])
+        self.install_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().strip().split(' ')[0])
+        self.survey_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().strip().split(' ')[0])
         self.surveyor_position_input.setText(self.surveyor_grade.text())
         self.surveyor_input.setText(self.surveyor_name.text())
         self.findings_input.setText('신설')
@@ -1602,7 +1627,13 @@ class CcpManager(QMainWindow):
             ]  
 
             # 실제 성과표 작성
-            reporter = ReportFromDataframe(template=self.TEMPLATE, sheetname='서식', savefile=fileName, dataframe=table_df, 
+            temporary_path = '_temp.xlsx'
+            success = self.copy_resource_to_file(self.TEMPLATE, temporary_path)
+            if not success:
+                self.status_message.setText("[성과표] 파일 복사에 실패했습니다.")
+                raise FileExistsError("파일 복사에 실패했습니다.")
+            
+            reporter = ReportFromDataframe(template=temporary_path, sheetname='서식', savefile=fileName, dataframe=table_df, 
                                           max_row=26, border_settings=border_settings, mappings=mappings)
             reporter.report()
             self.status_message.setText(f"성과표가 성공적으로 저장되었습니다: {fileName}")

@@ -621,6 +621,7 @@ def format_date_to_korean(datetime_str):
 
 def convert_angle_to_decimal(angle_str, n=4) -> tuple:
     # 입력 문자열에서 각도, 분, 초를 분리, 초는 n자리에서 오사오입
+    angle_str = angle_str.strip()
     if not angle_str.endswith('"'):
         angle_str += '"'
     angle_str = angle_str.replace("˚", "˚ ").replace("'", "' ")
