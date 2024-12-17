@@ -401,6 +401,7 @@ class CcpManager(QMainWindow):
         self.image_extension = ".jpg"   # 그림파일 디폴트 확장자
         self.is_same_name = False       # 도근번호와 그림파일명이 같은가?
         self.rtk_data_file = None       # rtk_data 파일
+        self.rtk_data_path = None       # rtk_data 파일폴더
         self.mode = "edit-table"        # 모드 ['edit-table', 'edit-image']
         self.__width = 400
         self.tr = None                  # tr.dat 파일 경로
@@ -1017,6 +1018,8 @@ class CcpManager(QMainWindow):
     def loadRTKdata(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Excel 파일 선택", "", "Excel Files (*.xlsx)")
         self.rtk_data_file = file_path
+        self.rtk_data_path = os.path.dirname(file_path)
+
         if file_path:
             try:
                 # Load the workbook and the first sheet using openpyxl
@@ -1079,7 +1082,7 @@ class CcpManager(QMainWindow):
         
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-        savas_filename = f'{time_stamp}_data.xlsx'
+        savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_data.xlsx')
         wb.save(savas_filename)
         self.status_message.setText(f"Save RTK_data_table to '{savas_filename}' successfully.")
     
@@ -1250,7 +1253,7 @@ class CcpManager(QMainWindow):
                        
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-        savas_filename = f'{time_stamp}_관측기록부.xlsx'
+        savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측기록부.xlsx')
         new_wb.save(savas_filename)
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
@@ -1317,7 +1320,7 @@ class CcpManager(QMainWindow):
 
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-        savas_filename = f'{time_stamp}_관측결과부.xlsx'
+        savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측결과부.xlsx')
         new_wb.save(savas_filename)
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
@@ -1382,7 +1385,7 @@ class CcpManager(QMainWindow):
 
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-        savas_filename = f'{time_stamp}_기준점일람표.xlsx'
+        savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_기준점일람표.xlsx')
         new_wb.save(savas_filename)
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
@@ -1573,15 +1576,17 @@ class CcpManager(QMainWindow):
     def apply_image_settings(self):
         if self.image_folder:
             self.table_widget.set_column_value("사진파일(경로)", self.image_folder)
-        if self.image_edited_check.isChecked():
-            for row in range(self.table_widget.rowCount()):
-                num = self.table_widget.item(row, 0).text()
+        for row in range(self.table_widget.rowCount()):
+            num = self.table_widget.item(row, 0).text()
+            if self.image_edited_check.isChecked():
                 self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), ''.join([num, '_edit',self.image_extension]))
+            else:
+                self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), ''.join([num, self.image_extension]))
+
         self.status_message.setText("사진정보를 갱신하였습니다.")
 
     def setLocation(self, kind_of_db):
         db_file = {'cif': 'Cif Files (*.cif)', 'shp': 'Esri Shp File (*.shp)'}
-
         jijuk, _ = QFileDialog.getOpenFileName(self,"Get Jijuk DB", "", f"{db_file.get(kind_of_db.lower())};;All Files (*)")
         try:
             if jijuk:
