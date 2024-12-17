@@ -23,6 +23,7 @@ from custom_image_editor import ImageEditor
 from rename_image_with_tr import DialogRenameImage
 from openpyxl import load_workbook
 from openpyxl.workbook import Workbook
+from openpyxl.worksheet.page import PageMargins, PrintPageSetup
 from openpyxl_addin import set_alignment, set_border, set_font, copyRange, pasteRange, copy_row_with_merge, format_date_to_korean, convert_decimal_to_roundup_angle
 from datetime import datetime, timedelta
 import random
@@ -1250,7 +1251,13 @@ class CcpManager(QMainWindow):
         # cell merge
         for row in range(17, 17+ survey_count, 2):
             record_sheet.merge_cells(f'B{row}:B{row+1}')
-                       
+        
+        #print setting
+        record_sheet.page_setup.orientation = record_sheet.ORIENTATION_PORTRAIT  # 가로 방향 설정
+        record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
+        record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
+        record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
+                    
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측기록부.xlsx')
@@ -1318,6 +1325,12 @@ class CcpManager(QMainWindow):
             record_sheet[f'N{17+row//2}'].value = row_items[11]  # 표고
             record_sheet[f'P{17+row//2}'].value = ''             # 비고 
 
+        #print setting
+        record_sheet.page_setup.orientation = record_sheet.ORIENTATION_PORTRAIT  # 가로 방향 설정
+        record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
+        record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
+        record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
+
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측결과부.xlsx')
@@ -1382,6 +1395,13 @@ class CcpManager(QMainWindow):
             record_sheet[f'O{4+row//2}'].value = self.surveyor_name.text()  # 팀명
 
         set_border(record_sheet[f"A1:O{4 + survey_count-1}"], edges=["outer"], border_style='medium', reset=False)
+
+        #print setting
+        record_sheet.page_setup.orientation = record_sheet.ORIENTATION_LANDSCAPE  # 가로 방향 설정
+        record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
+        record_sheet.page_setup.fitToPage = 1  # 한 페이지에 모든 시트 맞춤
+        record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
+        record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
 
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
