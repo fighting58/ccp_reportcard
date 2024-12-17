@@ -400,6 +400,7 @@ class CcpManager(QMainWindow):
         self._image_folder = None        # 그림파일 폴더
         self.image_extension = ".jpg"   # 그림파일 디폴트 확장자
         self.is_same_name = False       # 도근번호와 그림파일명이 같은가?
+        self.rtk_data_file = None       # rtk_data 파일
         self.mode = "edit-table"        # 모드 ['edit-table', 'edit-image']
         self.__width = 400
         self.tr = None                  # tr.dat 파일 경로
@@ -611,9 +612,8 @@ class CcpManager(QMainWindow):
         vlayout1.addWidget(self.jpeg_radio)
         vlayout1.addWidget(self.png_radio)
         extension_group.setLayout(vlayout1)
-        self.same_filename_check = QCheckBox(side_container)
-        self.same_filename_check.setText('  도근번호 파일명 일치')
-        self.same_filename_check.setChecked(True)
+        self.image_edited_check = QCheckBox(side_container)
+        self.image_edited_check.setText('  이미지 편집 완료')
         hlayout2 = QHBoxLayout()
         hspacer2 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.image_apply_button = QPushButton(QIcon(':resources/icons/cpu.svg'), '  적용', side_container)
@@ -623,7 +623,7 @@ class CcpManager(QMainWindow):
         
         image_management_sub_layout.addWidget(self.get_image_button)
         image_management_sub_layout.addWidget(extension_group)
-        image_management_sub_layout.addWidget(self.same_filename_check)
+        image_management_sub_layout.addWidget(self.image_edited_check)
         image_management_sub_layout.addLayout(hlayout2)
         image_management_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         image_management_sub.setLayout(image_management_sub_layout)
@@ -747,9 +747,20 @@ class CcpManager(QMainWindow):
         # custom table widget
         vlayout2 = QVBoxLayout()
         vlayout2.setContentsMargins(0, 0, 0, 0)
+        self.band = QFrame(self)
+        self.band.setObjectName("band")
+        hlayout_table = QHBoxLayout(self.band)
+        hlayout_table.setContentsMargins(0, 0, 0, 0)
         temp_label1 = QLabel(self)
         temp_label1.setObjectName("temp_label1")
-        temp_label1.setFixedHeight(30)
+        self.save_table = QPushButton(icon=QIcon(':resources/icons/diskette.svg'), parent=self)
+        self.save_table.setIconSize(QSize(24,24))
+        self.save_table.setObjectName("save_table")
+        self.save_table.setToolTip("변경내용 저장(xlsx)")
+        self.save_table.setFixedWidth(30)
+        self.band.setFixedHeight(30)
+        hlayout_table.addWidget(temp_label1)
+        hlayout_table.addWidget(self.save_table)
 
         self.rtk_table_widget = CustomTableWidget()
         self.rtk_table_widget.setObjectName("rtk_table_widget")
@@ -773,7 +784,8 @@ class CcpManager(QMainWindow):
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.table_widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         self.table_widget.verticalHeader().hide()
-        vlayout2.addWidget(temp_label1)
+        
+        vlayout2.addWidget(self.band)
         vlayout2.addWidget(self.rtk_table_widget)
         vlayout2.addWidget(self.table_widget)
         main_frame_layout.addLayout(vlayout2)
@@ -808,6 +820,7 @@ class CcpManager(QMainWindow):
 
         # signal-slot connection
         self.rtk_xlsx_button.clicked.connect(self.loadRTKdata)
+        self.save_table.clicked.connect(self.save_rtk_table)
         self.rtk_cif_button.clicked.connect(self.rtk_location)
         self.rtk_sort_button.clicked.connect(self.rtk_sort)
         self.rtk_timecheck_button.clicked.connect(self.rtk_timecheck)
@@ -974,10 +987,12 @@ class CcpManager(QMainWindow):
             self.rtk_data_sub.setVisible(True)
             self.rtk_table_widget.show()
             self.table_widget.hide()
+            self.save_table.show()
         else:
             self.rtk_data_sub.hide()
             self.rtk_table_widget.hide()
             self.table_widget.show()
+            self.save_table.hide()
 
     def input_data_toggle(self):
         if self.input_data_button.isChecked():
@@ -1001,6 +1016,7 @@ class CcpManager(QMainWindow):
 
     def loadRTKdata(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Excel 파일 선택", "", "Excel Files (*.xlsx)")
+        self.rtk_data_file = file_path
         if file_path:
             try:
                 # Load the workbook and the first sheet using openpyxl
@@ -1045,6 +1061,27 @@ class CcpManager(QMainWindow):
 
             except Exception as e:
                 self.status_message.setText(f"파일 로드 중 오류 발생: {e}")
+
+    def save_rtk_table(self):
+        wb = load_workbook(self.rtk_data_file)
+        sheet = wb.active
+        sheet.delete_rows(2, sheet.max_row)
+
+        # Copy the source sheet data to the new workbook
+        for row in range(0, self.rtk_table_widget.rowCount()):
+            row_items = []
+            for col in range(self.rtk_table_widget.columnCount()-4):
+                item = self.rtk_table_widget.item(row, col)
+                row_items.append(item.text())
+            for idx, item in enumerate(row_items):
+                sheet.cell(row=row+2, column=idx+1, value=item)
+        
+        
+        # Save the new workbook
+        time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        savas_filename = f'{time_stamp}_data.xlsx'
+        wb.save(savas_filename)
+        self.status_message.setText(f"Save RTK_data_table to '{savas_filename}' successfully.")
     
     def rtk_sort(self):
         self.rtk_table_widget.sort_table_widget(0,1)
@@ -1111,10 +1148,14 @@ class CcpManager(QMainWindow):
             raise ValueError("Invalid unit. Choose 'seconds', 'minutes', or 'hours'.")
 
     def rtk_location(self):
-        jijuk, _ = QFileDialog.getOpenFileName(self,"Get Jijuk DB", "", "Cif File (*.cif)")
+        jijuk, _ = QFileDialog.getOpenFileName(self,"Get Jijuk DB", "", "지적파일 (*.cif; *.shp)")
         try:
             if jijuk:
-                gdf = CifGeoDataFrame(jijuk).convert_to_geodataframe()                
+                if jijuk.lower().endswith(".cif"):
+                    gdf = CifGeoDataFrame(jijuk).convert_to_geodataframe()
+                elif jijuk.lower().endswith(".shp"):
+                    gdf = gpd.read_file(jijuk, encoding='euc-kr')
+          
                 if gdf is None: 
                     return
                 
@@ -1137,7 +1178,7 @@ class CcpManager(QMainWindow):
 
     def rtk_record(self):
         """ 위성관측기록부 작성 """
-        record_file = self.rtk_table_widget.item(0,1).text().strip().split(' ')[0].replace('-', '') + '_관측기록부.xlsx'
+        record_file = '_관측기록부.xlsx'
         template_path = self.RTK_TEMPLATE
         sheet_name = '@관측기록부'
 
@@ -1208,12 +1249,14 @@ class CcpManager(QMainWindow):
             record_sheet.merge_cells(f'B{row}:B{row+1}')
                        
         # Save the new workbook
-        new_wb.save(record_file)
-        self.status_message.setText(f"'{sheet_name}' sheet copied to '{record_file}' successfully.")
+        time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        savas_filename = f'{time_stamp}_관측기록부.xlsx'
+        new_wb.save(savas_filename)
+        self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
     def rtk_result(self):
         """ 위성관측결과부 작성 """
-        record_file = self.rtk_table_widget.item(0,1).text().strip().split(' ')[0].replace('-', '') + '_관측결과부.xlsx'
+        record_file = '_관측결과부.xlsx'
         template_path = self.RTK_TEMPLATE
         sheet_name = '@관측결과부'
 
@@ -1273,12 +1316,14 @@ class CcpManager(QMainWindow):
             record_sheet[f'P{17+row//2}'].value = ''             # 비고 
 
         # Save the new workbook
-        new_wb.save(record_file)
-        self.status_message.setText(f"'{sheet_name}' sheet copied to '{record_file}' successfully.")
+        time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        savas_filename = f'{time_stamp}_관측결과부.xlsx'
+        new_wb.save(savas_filename)
+        self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
     def rtk_ilram(self):
         """ 지적기준점 일람표 작성 """
-        record_file = self.rtk_table_widget.item(0,1).text().strip().split(' ')[0].replace('-', '') + '_기준점일람표.xlsx'
+        record_file = '_기준점일람표.xlsx'
         template_path = self.RTK_TEMPLATE
         sheet_name = '@기준점일람표'
 
@@ -1336,8 +1381,10 @@ class CcpManager(QMainWindow):
         set_border(record_sheet[f"A1:O{4 + survey_count-1}"], edges=["outer"], border_style='medium', reset=False)
 
         # Save the new workbook
-        new_wb.save(record_file)
-        self.status_message.setText(f"'{sheet_name}' sheet copied to '{record_file}' successfully.")
+        time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        savas_filename = f'{time_stamp}_기준점일람표.xlsx'
+        new_wb.save(savas_filename)
+        self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
     def rtk_apply(self):
         # 공통값 입력 
@@ -1526,10 +1573,10 @@ class CcpManager(QMainWindow):
     def apply_image_settings(self):
         if self.image_folder:
             self.table_widget.set_column_value("사진파일(경로)", self.image_folder)
-        if self.same_filename_check.isChecked():
+        if self.image_edited_check.isChecked():
             for row in range(self.table_widget.rowCount()):
                 num = self.table_widget.item(row, 0).text()
-                self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), ''.join([num, self.image_extension]))
+                self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), ''.join([num, '_edit',self.image_extension]))
         self.status_message.setText("사진정보를 갱신하였습니다.")
 
     def setLocation(self, kind_of_db):

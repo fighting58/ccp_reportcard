@@ -40,7 +40,7 @@
         text-align: center; 
         font-weight: bold;
         }        
-    QToolBar, #temp_label, #temp_label1 {
+    QToolBar, #temp_label, #temp_label1, #band {
         background-color: #F0F0F0;
         }
     QToolBar *, QMenu::item {
