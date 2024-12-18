@@ -772,19 +772,30 @@ class CcpManager(QMainWindow):
         self.band.setObjectName("band")
         hlayout_table = QHBoxLayout(self.band)
         hlayout_table.setContentsMargins(0, 0, 0, 0)
+        column_hide_icon = QIcon()
+        column_hide_icon.addFile(':resources/icons/column-hide.svg', QSize(), QIcon.Normal, QIcon.Off)
+        column_hide_icon.addFile(':resources/icons/column-show.svg', QSize(), QIcon.Normal, QIcon.On)
+        self.column_hide = QPushButton(self)
+        self.column_hide.setIcon(column_hide_icon)
+        self.column_hide.setCheckable(True)
+        self.column_hide.setIconSize(QSize(24, 24))
+        self.column_hide.setObjectName("column-hide")
+        self.column_hide.setToolTip("컬럼 숨기기")
+        self.column_hide.setFixedWidth(30)
         temp_label1 = QLabel(self)
         temp_label1.setObjectName("temp_label1")
         self.table_to_tr = QPushButton(icon=QIcon(':resources/icons/point_black.png'), parent=self)
-        self.table_to_tr.setIconSize(QSize(24,24))
+        self.table_to_tr.setIconSize(QSize(24, 24))
         self.table_to_tr.setObjectName("table_to_tr")
         self.table_to_tr.setToolTip("tr.data 저장")
         self.table_to_tr.setFixedWidth(30)
         self.save_table = QPushButton(icon=QIcon(':resources/icons/diskette.svg'), parent=self)
-        self.save_table.setIconSize(QSize(24,24))
+        self.save_table.setIconSize(QSize(24, 24))
         self.save_table.setObjectName("save_table")
         self.save_table.setToolTip("변경내용 저장(xlsx)")
         self.save_table.setFixedWidth(30)
         self.band.setFixedHeight(30)
+        hlayout_table.addWidget(self.column_hide)
         hlayout_table.addWidget(temp_label1)
         hlayout_table.addWidget(self.table_to_tr)
         hlayout_table.addWidget(self.save_table)
@@ -846,6 +857,7 @@ class CcpManager(QMainWindow):
         self.statusbar.addPermanentWidget(self.status_message)
 
         # signal-slot connection
+        self.column_hide.toggled.connect(self.rtk_table_hide_column)
         self.table_to_tr.clicked.connect(self.table_to_trdat)
         self.rtk_xlsx_button.clicked.connect(self.loadRTKdata)
         self.save_table.clicked.connect(self.save_rtk_table)
@@ -902,35 +914,35 @@ class CcpManager(QMainWindow):
                 item.setTextAlignment(Qt.AlignCenter)
                 self.table_widget.setItem(row, col, item)
 
-    def add_menubar(self):
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu('파일')
+    # def add_menubar(self):
+    #     menubar = self.menuBar()
+    #     file_menu = menubar.addMenu('파일')
 
-        new_action = QAction(QIcon(':resources/icons/document-add-svgrepo-com.svg'), '새 문서', self)
-        # new_action.triggered.connect(self.new_document)
-        file_menu.addAction(new_action)
+    #     new_action = QAction(QIcon(':resources/icons/document-add-svgrepo-com.svg'), '새 문서', self)
+    #     # new_action.triggered.connect(self.new_document)
+    #     file_menu.addAction(new_action)
 
-        open_action = QAction(QIcon(':resources/icons/album-svgrepo-com.svg'), '열기', self)
-        # open_action.triggered.connect(self.open_image)
-        file_menu.addAction(open_action)
+    #     open_action = QAction(QIcon(':resources/icons/album-svgrepo-com.svg'), '열기', self)
+    #     # open_action.triggered.connect(self.open_image)
+    #     file_menu.addAction(open_action)
 
-        save_action = QAction(QIcon(':resources/icons/diskette-svgrepo-com.svg'), '저장', self)
-        # save_action.triggered.connect(self.save_image)
-        file_menu.addAction(save_action)
+    #     save_action = QAction(QIcon(':resources/icons/diskette-svgrepo-com.svg'), '저장', self)
+    #     # save_action.triggered.connect(self.save_image)
+    #     file_menu.addAction(save_action)
 
-        view_menu = menubar.addMenu('보기')
-        self.show_layer_action = QAction(QIcon(':resources/icons/layers-svgrepo-com.svg'), '레이어', self)
-        # self.show_layer_action.triggered.connect(self.show_layer_win)
-        self.show_layer_action.setEnabled(False)
-        self.show_explorer_action = QAction(QIcon(':resources/icons/library-svgrepo-com.svg'), "탐색기", self)
-        # self.show_explorer_action.triggered.connect(self.show_explorer_win)
-        self.show_explorer_action.setEnabled(False)
-        self.show_preview_action = QAction(QIcon(':resources/icons/gallery-svgrepo-com.svg'), "미리보기", self)
-        # self.show_preview_action.triggered.connect(self.show_preview_win)
-        self.show_preview_action.setEnabled(False)
-        view_menu.addAction(self.show_layer_action)
-        view_menu.addAction(self.show_explorer_action)
-        view_menu.addAction(self.show_preview_action)
+    #     view_menu = menubar.addMenu('보기')
+    #     self.show_layer_action = QAction(QIcon(':resources/icons/layers-svgrepo-com.svg'), '레이어', self)
+    #     # self.show_layer_action.triggered.connect(self.show_layer_win)
+    #     self.show_layer_action.setEnabled(False)
+    #     self.show_explorer_action = QAction(QIcon(':resources/icons/library-svgrepo-com.svg'), "탐색기", self)
+    #     # self.show_explorer_action.triggered.connect(self.show_explorer_win)
+    #     self.show_explorer_action.setEnabled(False)
+    #     self.show_preview_action = QAction(QIcon(':resources/icons/gallery-svgrepo-com.svg'), "미리보기", self)
+    #     # self.show_preview_action.triggered.connect(self.show_preview_win)
+    #     self.show_preview_action.setEnabled(False)
+    #     view_menu.addAction(self.show_layer_action)
+    #     view_menu.addAction(self.show_explorer_action)
+    #     view_menu.addAction(self.show_preview_action)
 
     def setResizable(self, widget=None):
         if widget is None:
@@ -1011,18 +1023,15 @@ class CcpManager(QMainWindow):
         return dock
 
     def input_rtkdata_toggle(self):
+        widgets = [self.rtk_data_sub, self.rtk_table_widget, self.save_table, self.table_to_tr, self.column_hide]
         if self.input_rtkdata_button.isChecked():
-            self.rtk_data_sub.setVisible(True)
-            self.rtk_table_widget.show()
             self.table_widget.hide()
-            self.save_table.show()
-            self.table_to_tr.show()
+            for widget in widgets:
+                widget.show()
         else:
-            self.rtk_data_sub.hide()
-            self.rtk_table_widget.hide()
             self.table_widget.show()
-            self.save_table.hide()
-            self.table_to_tr.hide()
+            for widget in widgets: 
+                widget.hide()
 
     def input_data_toggle(self):
         if self.input_data_button.isChecked():
@@ -1031,6 +1040,15 @@ class CcpManager(QMainWindow):
             self.table_widget.show()
         else:
             self.input_data_sub.hide()
+
+    def rtk_table_hide_column(self):
+        for col in [4, 5, 8, 12, 14, 15, 16, 18, 19]:
+            if self.column_hide.isChecked():     
+                self.rtk_table_widget.setColumnHidden(col, True)
+                self.column_hide.setToolTip('컬럼 보이기')
+            else:
+                self.rtk_table_widget.setColumnHidden(col, False)
+                self.column_hide.setToolTip('컬럼 숨기기')
 
     # 리소스에서 파일을 복사하는 함수
     def copy_resource_to_file(self, resource_path, destination_path):
@@ -1093,6 +1111,9 @@ class CcpManager(QMainWindow):
 
             except Exception as e:
                 self.status_message.setText(f"파일 로드 중 오류 발생: {e}")
+            
+            self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("에포크"), 80)
+            self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위성수"), 80)
 
     def table_to_trdat(self):
         if self.rtk_data_path is not None:
@@ -1263,14 +1284,20 @@ class CcpManager(QMainWindow):
         survey_count = self.rtk_table_widget.rowCount() // 2
         reception_number = self.reception_number.text().strip()
         ref_jibun = self.ref_jibun.text().strip()
+        jiguname = self.jigu_name.text().strip()
+
         if not reception_number.endswith('호'):
-            reception_number = reception_number + '호'
-        
+            reception_number = reception_number + '호'        
         if not ref_jibun.endswith('번지'):
             ref_jibun = ref_jibun + '번지'
+        if not jiguname.endswith('지구'):
+            jiguname = ""
+        else:
+            jiguname = f'[ {jiguname} ]'
 
         # 관측 정보 입력
         record_sheet['D15'].value = ref_jibun              # 대표 지번
+        record_sheet['E17'].value = jiguname               # 지구명
         record_sheet['N11'].value = self.ccp_type.currentText()   # 구분
         record_sheet['I19'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().strip().split(' ')[0])  # 관측일자
         record_sheet['N12'].value = f'{survey_count}점'    # 점 수
@@ -1280,7 +1307,6 @@ class CcpManager(QMainWindow):
         #print setting
         record_sheet.page_setup.orientation = record_sheet.ORIENTATION_PORTRAIT  # 가로 방향 설정
         record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
-        record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
         record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
                     
         # Save the new workbook
