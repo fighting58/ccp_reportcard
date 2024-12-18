@@ -88,7 +88,7 @@ def toBL(**kargs):
             s = ".".join([s, us])
         except:
             datum= datum.replace(" ", "").replace('"', '').replace('˝', '')
-            for c in "˚´˚'°'":
+            for c in "˚´°'":
                 datum=datum.replace(c, "-")
             datum = f'{datum.ljust(12, "0")}'
             d, m, s = datum.split("-")
