@@ -78,7 +78,7 @@ def toBL(**kargs):
     if datum:
         datum = str(datum) 
         try: 
-            # temp = float(datum)
+            temp = float(datum)
             datum = f'{datum.ljust(12, "0")}'
             idx = datum.index('.')
             d = datum[:idx]
@@ -90,6 +90,7 @@ def toBL(**kargs):
             datum= datum.replace(" ", "").replace('"', '').replace('˝', '')
             for c in "˚´˚'°'":
                 datum=datum.replace(c, "-")
+            datum = f'{datum.ljust(12, "0")}'
             d, m, s = datum.split("-")
             s= f'{s[:7].ljust(7, "0")}'
 

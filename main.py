@@ -394,7 +394,8 @@ class CcpManager(QMainWindow):
     RTK_HEADERS = ['번호', '시작', '종료', '에포크', '수평', '수직', '위도', '경도', '타원체고', 'X', 'Y', 'Z', '지오이드고',
                    'PDOP', 'HDOP', 'VDOP', '장비', '위성수', '솔루션', '사진', '재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도']
     TEMPLATE = ':resources/templates/template.xlsx'
-    RTK_TEMPLATE = ':resources/templates/RTK_TEMPLATE.xlsx'
+    # RTK_TEMPLATE = ':resources/templates/RTK_TEMPLATE.xlsx'
+    RTK_TEMPLATE = 'RTK_TEMPLATE.xlsx'
 
     def __init__(self):
         super().__init__()
@@ -1257,29 +1258,29 @@ class CcpManager(QMainWindow):
 
     def rtk_cover(self):
         """ 표지 작성 """
-        # record_file = '_표지.xlsx'
-        # template_path = self.RTK_TEMPLATE
-        # sheet_name = '@표지'
+        record_file = '_표지.xlsx'
+        template_path = self.RTK_TEMPLATE
+        sheet_name = '@표지'
 
-        # # Load the template workbook
-        # copy_success = self.copy_resource_to_file(template_path, record_file)
-        # if not copy_success:
-        #     self.status_message.setText("[표지] 파일 복사에 실패했습니다.")
-        #     raise FileExistsError("파일 복사에 실패했습니다.")
+        # Load the template workbook
+        copy_success = self.copy_resource_to_file(template_path, record_file)
+        if not copy_success:
+            self.status_message.setText("[표지] 파일 복사에 실패했습니다.")
+            raise FileExistsError("파일 복사에 실패했습니다.")
         
-        new_wb = load_workbook('겉표지.xlsx')
+        new_wb = load_workbook(record_file)
         
-        # # Ensure the specified sheet exists
-        # if sheet_name not in new_wb.sheetnames:
-        #     raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
+        # Ensure the specified sheet exists
+        if sheet_name not in new_wb.sheetnames:
+            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
         
         # Get the sheet to copy
         record_sheet = new_wb.active
 
         # Remove the default sheet created in the new workbook
-        # for sht in new_wb.sheetnames:
-        #     if sheet_name != sht:
-        #         del new_wb[sht]        
+        for sht in new_wb.sheetnames:
+            if sheet_name != sht:
+                del new_wb[sht]        
 
         survey_count = self.rtk_table_widget.rowCount() // 2
         reception_number = self.reception_number.text().strip()
@@ -1296,13 +1297,13 @@ class CcpManager(QMainWindow):
             jiguname = f'[ {jiguname} ]'
 
         # 관측 정보 입력
-        record_sheet['D15'].value = ref_jibun              # 대표 지번
-        record_sheet['E17'].value = jiguname               # 지구명
-        record_sheet['N11'].value = self.ccp_type.currentText()   # 구분
-        record_sheet['I19'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().strip().split(' ')[0])  # 관측일자
-        record_sheet['N12'].value = f'{survey_count}점'    # 점 수
+        record_sheet['D15'].value = ref_jibun                       # 대표 지번
+        record_sheet['E17'].value = jiguname                        # 지구명
+        record_sheet['N11'].value = self.ccp_type.currentText()     # 구분
+        record_sheet['I19'].value = format_date_to_korean(self.rtk_table_widget.item(0,1).text().split(' ')[0])  # 관측일자
+        record_sheet['N12'].value = f'{survey_count}점'             # 점 수
         record_sheet['I21'].value = f'{self.survey_license.currentText()}  {self.surveyor_name.text()}'  # 측량자
-        record_sheet['N10'].value = reception_number       # 접수번호
+        record_sheet['N10'].value = reception_number                # 접수번호
         
         #print setting
         record_sheet.page_setup.orientation = record_sheet.ORIENTATION_PORTRAIT  # 가로 방향 설정
@@ -1534,7 +1535,8 @@ class CcpManager(QMainWindow):
         #print setting
         record_sheet.page_setup.orientation = record_sheet.ORIENTATION_LANDSCAPE  # 가로 방향 설정
         record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
-        record_sheet.page_setup.fitToPage = 1  # 한 페이지에 모든 시트 맞춤
+        record_sheet.page_setup.fitToHeight = 0  # 한 페이지에 모든 열 맞춤 X
+        record_sheet.page_setup.fitToWidth = 1  # 한 페이지에 모든 행 맞춤
         record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
         record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
 
