@@ -37,7 +37,9 @@ class EnvironmentManage:
         self._update()
 
     def get_current_user(self):
-        return self.config['CUR_USER']['USER']
+        if 'CUR_USER' not in self.config.sections():
+            self.add_section('CUR_USER', {'USER': ''})
+        return self.config['CUR_USER'].get('USER', None)
 
     def set_current_user(self, user):
         self.config['CUR_USER']['USER'] = user 
@@ -54,5 +56,5 @@ class EnvironmentManage:
     
 if __name__ == '__main__':
     env = EnvironmentManage()
-    section_names = env.get_all_section_names()
-    print(section_names)
+    env.add_section('CUR_USER', {'USER': 'PASSWORD'})
+    print(env.get_current_user())
