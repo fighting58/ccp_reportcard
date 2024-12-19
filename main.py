@@ -394,8 +394,8 @@ class CcpManager(QMainWindow):
     RTK_HEADERS = ['번호', '시작', '종료', '에포크', '수평', '수직', '위도', '경도', '타원체고', 'X', 'Y', 'Z', '지오이드고',
                    'PDOP', 'HDOP', 'VDOP', '장비', '위성수', '솔루션', '사진', '재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도']
     TEMPLATE = ':resources/templates/template.xlsx'
-    # RTK_TEMPLATE = ':resources/templates/RTK_TEMPLATE.xlsx'
-    RTK_TEMPLATE = 'RTK_TEMPLATE.xlsx'
+    RTK_TEMPLATE = ':resources/templates/RTK_TEMPLATE.xlsx'
+    
 
     def __init__(self):
         super().__init__()
@@ -1117,6 +1117,7 @@ class CcpManager(QMainWindow):
             self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위성수"), 80)
 
     def table_to_trdat(self):
+        """ tr.dat 파일 생성 """
         if self.rtk_data_path is not None:
             filename = os.path.join(self.rtk_data_path, 'temp_tr.dat')
         else:
@@ -1144,6 +1145,7 @@ class CcpManager(QMainWindow):
         self.status_message.setText(f"tr.dat 파일이 성공적으로 저장되었습니다: {filename}")
 
     def save_rtk_table(self):
+        """ RTK 데이터 재생성 """
         wb = load_workbook(self.rtk_data_file)
         sheet = wb.active
         sheet.delete_rows(2, sheet.max_row)
@@ -1152,11 +1154,16 @@ class CcpManager(QMainWindow):
         for row in range(0, self.rtk_table_widget.rowCount()):
             row_items = []
             for col in range(self.rtk_table_widget.columnCount()-4):
-                item = self.rtk_table_widget.item(row, col)
-                row_items.append(item.text())
+                if row%2==1 and col==0:
+                    item = self.rtk_table_widget.item(row-1, col)
+                    item_value = f'{item.text()}(재관측)'
+                else:
+                    item = self.rtk_table_widget.item(row, col)
+                    item_value = item.text()
+                row_items.append(item_value)
             for idx, item in enumerate(row_items):
                 sheet.cell(row=row+2, column=idx+1, value=item)
-        
+       
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_data.xlsx')
@@ -1239,6 +1246,7 @@ class CcpManager(QMainWindow):
                 if gdf is None: 
                     return
                 
+                not_found = []
                 for i in range(self.rtk_table_widget.rowCount()):
                     location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "JIBUNJIMOK", "DOHO"])
                     if not location is None:
@@ -1247,11 +1255,11 @@ class CcpManager(QMainWindow):
                         self.rtk_table_widget.item(i, 22).setText(CifGeoDataFrame().pnu2jibun(pnu))
                         self.rtk_table_widget.item(i, 23).setText(self.dom_to_doho(dom)) 
                     else:
-                        print('location none')
+                        not_found.append(self.rtk_table_widget.item(i, 0).text())
                         self.rtk_table_widget.item(i, 21).setText("")
                         self.rtk_table_widget.item(i, 22).setText("")
                         self.rtk_table_widget.item(i, 23).setText("") 
-                self.status_message.setText("주소검색을 마쳤습니다. 미작성된 소재지를 확인하세요.")
+                self.status_message.setText(f"주소검색을 마쳤습니다. 미작성된 소재지{str(not_found)}를 확인하세요.")
 
         except Exception as e:
             self.status_message.setText(str(e))
@@ -1384,6 +1392,10 @@ class CcpManager(QMainWindow):
             record_sheet[f'O{17+row}'].value = row_items[17]  # 위성수
             record_sheet[f'P{17+row}'].value = '15˚'  # 위성고도각
 
+        max_row = record_sheet.max_row
+        rng = record_sheet[f'A17:P{max_row}']
+        set_font(rng, sz=8, name="굴림")
+
         # cell merge
         for row in range(17, 17+ survey_count, 2):
             record_sheet.merge_cells(f'B{row}:B{row+1}')
@@ -1393,6 +1405,7 @@ class CcpManager(QMainWindow):
         record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
         record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
         record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
+        record_sheet.print_area = None  # 인쇄 영역 설정
                     
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
@@ -1461,11 +1474,16 @@ class CcpManager(QMainWindow):
             record_sheet[f'N{17+row//2}'].value = row_items[11]  # 표고
             record_sheet[f'P{17+row//2}'].value = ''             # 비고 
 
+        max_row = record_sheet.max_row
+        rng = record_sheet[f'A17:P{max_row}']
+        set_font(rng, sz=8, name="굴림")
+        
         #print setting
         record_sheet.page_setup.orientation = record_sheet.ORIENTATION_PORTRAIT  # 가로 방향 설정
         record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
         record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
         record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
+        record_sheet.print_area = None  # 인쇄 영역 설정
 
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
@@ -1525,7 +1543,7 @@ class CcpManager(QMainWindow):
             record_sheet[f'I{4+row//2}'].value = convert_decimal_to_roundup_angle(row_items[6])   # 위도
             record_sheet[f'J{4+row//2}'].value = convert_decimal_to_roundup_angle(row_items[7])   # 경도
             record_sheet[f'K{4+row//2}'].value = ' '.join([row_items[21], row_items[22]]).replace('경기도 용인시 처인구 ', '')   # 소재지
-            record_sheet[f'L{4+row//2}'].value = row_items[8].strip().split(' ')[0]   # 설치일자
+            record_sheet[f'L{4+row//2}'].value = row_items[1].strip().split(' ')[0]   # 설치일자
             record_sheet[f'M{4+row//2}'].value = row_items[20]  # 재질
             record_sheet[f'N{4+row//2}'].value = ''   # 비고
             record_sheet[f'O{4+row//2}'].value = self.surveyor_name.text()  # 팀명
@@ -1537,8 +1555,6 @@ class CcpManager(QMainWindow):
         record_sheet.page_setup.paperSize = record_sheet.PAPERSIZE_A4  # A4 용지 크기 설정
         record_sheet.page_setup.fitToHeight = 0  # 한 페이지에 모든 열 맞춤 X
         record_sheet.page_setup.fitToWidth = 1  # 한 페이지에 모든 행 맞춤
-        record_sheet.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)  # 페이지 여백 설정
-        record_sheet.print_options.horizontalCentered = True  # 가로 중앙 정렬 설정
 
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
@@ -1804,7 +1820,7 @@ class CcpManager(QMainWindow):
         return pd.DataFrame(data)   
 
     def saveToExcel(self):
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save Excel File", "", "Excel Files (*.xlsx)")
+        fileName, _ = QFileDialog.getSaveFileName(self, caption="Save Excel File", dir=self.rtk_data_path, filter="Excel Files (*.xlsx)")
         if fileName:
             table_df = self.tablewidget_to_dataframe(self.table_widget)
             table_df.fillna("", inplace=True)
