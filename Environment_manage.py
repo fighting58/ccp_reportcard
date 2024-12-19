@@ -1,7 +1,7 @@
 import configparser
 import os
 
-class EnvironmentManage:
+class EnvironmentManager:
     def __init__(self):
         self.config = configparser.ConfigParser()
         if not os.path.exists('config.ini'):
@@ -10,6 +10,12 @@ class EnvironmentManage:
     
     def get_all_section_names(self):
         return self.config.sections()
+    
+    def get_all_user(self):
+        sections = self.get_all_section_names()
+        if "CUR_USER" in sections:
+           sections.remove("CUR_USER")
+        return sections
 
     def get_section(self, section_name) -> dict:
         return dict(self.config[section_name])
@@ -37,9 +43,14 @@ class EnvironmentManage:
         self._update()
 
     def get_current_user(self):
-        if 'CUR_USER' not in self.config.sections():
-            self.add_section('CUR_USER', {'USER': ''})
-        return self.config['CUR_USER'].get('USER', None)
+        sections = self.get_all_section_names()
+        if "CUR_USER" in sections:
+            return self.config['CUR_USER'].get('USER')  
+        users = self.get_all_user()
+        if users:
+            self.add_section(section_name='CUR_USER', evironment={'USER': users[0]})
+            return users[0]
+        return None
 
     def set_current_user(self, user):
         self.config['CUR_USER']['USER'] = user 
@@ -55,6 +66,6 @@ class EnvironmentManage:
         return
     
 if __name__ == '__main__':
-    env = EnvironmentManage()
+    env = EnvironmentManager()
     env.add_section('CUR_USER', {'USER': 'PASSWORD'})
     print(env.get_current_user())

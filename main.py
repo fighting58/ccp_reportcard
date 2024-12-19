@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QRadioButton, QTableWidget, QToolBar, QButtonGroup, QStyledItemDelegate,
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, 
-                                QSizePolicy, QAbstractItemView, QMenu, QLabel, QComboBox, QInputDialog, QSpinBox)
+                                QSizePolicy, QAbstractItemView, QMenu, QLabel, QComboBox, QInputDialog, 
+                                QSpinBox, QDialog)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize, QFile, QIODevice, QTextStream
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
 import resources
@@ -28,6 +29,9 @@ from openpyxl_addin import set_alignment, set_border, set_font, copyRange, paste
 from datetime import datetime, timedelta
 import random
 from QCustomModals import QCustomModals
+from settings import Settings
+from environment_manage import EnvironmentManager
+
 
 class CustomToggleButton(QWidget):
     stateChanged = Signal(bool)  # 상태 변경 시그널
@@ -400,12 +404,13 @@ class CcpManager(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self._image_folder = None        # 그림파일 폴더
+        self._image_folder = None       # 그림파일 폴더
         self.image_extension = ".jpg"   # 그림파일 디폴트 확장자
         self.is_same_name = False       # 도근번호와 그림파일명이 같은가?
         self.rtk_data_file = None       # rtk_data 파일
         self.rtk_data_path = None       # rtk_data 파일폴더
         self.mode = "edit-table"        # 모드 ['edit-table', 'edit-image']
+        self.settings = EnvironmentManager()
         self.__width = 400
         self.tr = None                  # tr.dat 파일 경로
         self.setWindowTitle("지적삼각보조(도근)점 성과표 작성")
@@ -453,7 +458,9 @@ class CcpManager(QMainWindow):
         self.rtk_timecheck_button.setIconSize(QSize(24, 24))
         self.rtk_cif_button = QPushButton(QIcon(':resources/icons/cif-file.svg'), f'   {"Cif/Shp 입력":^12}    ', side_container)
         self.rtk_cif_button.setIconSize(QSize(24, 24))
+
         hlayout_rtk1 = QHBoxLayout()
+        
         self.reception_number = QLineEdit(side_container)  # 접수번호
         self.ccp_type = QComboBox(side_container)  # 관측자 자격
         self.ccp_type.setObjectName("ccp_type")
@@ -723,15 +730,19 @@ class CcpManager(QMainWindow):
         
         # 기타 툴 - 서브
         extra_tools_sub = QWidget(side_container)
-        extra_tools_sub.setFixedHeight(100)
+        extra_tools_sub.setFixedHeight(140)
         extra_tools_sub_layout = QVBoxLayout()
         extra_tools_sub_layout.setSpacing(15)
         self.update_code_button = QPushButton(QIcon(':resources/icons/server-square-update.svg'), '법정동코드 업데이트', side_container)
         self.update_code_button.setIconSize(QSize(24, 24))
         self.classify_image_button = QPushButton(QIcon(':resources/icons/gallery-edit.svg'), '  사진파일명 변경   ', side_container)
         self.classify_image_button.setIconSize(QSize(24, 24))
+        self.settings_button = QPushButton(QIcon(':resources/icons/settings.svg'), '   관측자 설정    ', side_container)
+        self.settings_button.setIconSize(QSize(24, 24))
         extra_tools_sub_layout.addWidget(self.update_code_button)
         extra_tools_sub_layout.addWidget(self.classify_image_button)
+        extra_tools_sub_layout.addWidget(self.settings_button)
+
         extra_tools_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
         extra_tools_sub.setLayout(extra_tools_sub_layout)
         extra_tools_sub.setVisible(False)
@@ -749,7 +760,7 @@ class CcpManager(QMainWindow):
         self.button_group.setExclusive(True)  
         scroll_area = self.create_scroll_area(side_container, parent=self)
         self.sidemenu = self.add_dockableWidget("테이블 편집", scroll_area)
-        self.sidemenu.setFixedWidth(200)
+        self.sidemenu.setFixedWidth(220)
         self.setResizable(self.sidemenu)
      
         # 시그널-슬롯 연결
@@ -904,6 +915,8 @@ class CcpManager(QMainWindow):
         self.update_code_button.clicked.connect(self.on_update_code)
         self.classify_image_button.clicked.connect(self.on_classify_image)
         self.change_mode_toggle.stateChanged.connect(self.change_mode)
+        self.settings_button.clicked.connect(self.show_settings_dialog)
+
     
     @Slot(int, str, str, str)
     def on_item_double_clicked(self, row, num, path, name):
@@ -1976,7 +1989,7 @@ class CcpManager(QMainWindow):
     def on_classify_image(self):
         dialog = DialogRenameImage()
         dialog.setObjectName("dialogrenameimage")
-        dialog.setStyleSheet(ex.get_stylesheet_from_resource(':resources/styles/dialogrenameimage.qss'))
+        dialog.setStyleSheet(self.get_stylesheet_from_resource(':resources/styles/dialogrenameimage.qss'))
         if not self.tr is None:
             dialog.tr = self.tr
         dialog.exec()
@@ -1992,6 +2005,21 @@ class CcpManager(QMainWindow):
             stylesheet = stream.readAll()   # 모든 내용 읽어오기
             qss_file.close()  # 파일 닫기
             return stylesheet
+
+    def show_settings_dialog(self):        
+        dialog = Settings()
+        dialog.setObjectName("settings")
+        dialog.setStyleSheet(self.get_stylesheet_from_resource(':resources/styles/dialogrenameimage.qss'))
+        
+        if dialog.exec() == QDialog.Accepted:
+            self.settings = dialog.settings
+
+    def reflect_settings(self):
+        current_user = self.settings.get_current_user()
+        users = self.settings.get_all_user()
+        user_data = self.settings.get_section(current_user)
+
+    
 
 if __name__ == "__main__":
     app=QApplication(sys.argv)
