@@ -27,6 +27,7 @@ from openpyxl.worksheet.page import PageMargins, PrintPageSetup
 from openpyxl_addin import set_alignment, set_border, set_font, copyRange, pasteRange, copy_row_with_merge, format_date_to_korean, convert_decimal_to_roundup_angle
 from datetime import datetime, timedelta
 import random
+from QCustomModals import QCustomModals
 
 class CustomToggleButton(QWidget):
     stateChanged = Signal(bool)  # 상태 변경 시그널
@@ -761,8 +762,8 @@ class CcpManager(QMainWindow):
         self.extra_tools_button.toggled.connect(extra_tools_sub.setVisible)
 
         #### main widget #########################################################################################
-        main_frame = QFrame(self)
-        main_frame_layout = QHBoxLayout(main_frame)
+        self.main_frame = QFrame(self)
+        main_frame_layout = QHBoxLayout(self.main_frame)
         main_frame_layout.setContentsMargins(0, 0, 0, 0)  
         main_frame_layout.setSpacing(0)  
 
@@ -851,7 +852,7 @@ class CcpManager(QMainWindow):
   
         main_frame_layout.addWidget(self.image_editor_frame)
        
-        self.setCentralWidget(main_frame)
+        self.setCentralWidget(self.main_frame)
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
         self.status_message = QLabel(self)
@@ -1022,6 +1023,22 @@ class CcpManager(QMainWindow):
         dock.setWidget(wdg)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
         return dock
+    
+    def show_modal(self, modal_type, **kargs):
+        """ 메시지 송출 """
+        default_settings = {'position': 'bottom-right', 'duration': 2000, 'closeIcon': ':resources/icons/x.svg'}
+        modal_collection = {'info':QCustomModals.InformationModal, 
+                            'success':QCustomModals.SuccessModal, 
+                            'error':QCustomModals.ErrorModal, 
+                            'warning':QCustomModals.WarningModal, 
+                            'custom':QCustomModals.CustomModal}
+        if modal_type not in ['info', 'success', 'error', 'warning', 'custom']: modal_type = 'custom'
+
+        for key, value in kargs.items():
+            default_settings[key] = value    
+
+        modal = modal_collection[modal_type](**default_settings)
+        modal.show()
 
     def input_rtkdata_toggle(self):
         widgets = [self.rtk_data_sub, self.rtk_table_widget, self.save_table, self.table_to_tr, self.column_hide]
@@ -1090,9 +1107,9 @@ class CcpManager(QMainWindow):
                 df = pd.DataFrame(rows, columns=headers)
 
                 # Sort DataFrame by '번호' column
-                if '번호' not in df.columns:
-                    self.status_message.setText("'번호' column not found in the Excel file.")
+                if '번호' not in df.columns:                 
                     raise ValueError("'번호' column not found in the Excel file.")
+
                 df_sorted = df.sort_values(by='번호')
 
                 # Prepare data for TableWidget (include headers)
@@ -1110,8 +1127,10 @@ class CcpManager(QMainWindow):
                         item.setTextAlignment(Qt.AlignCenter)
                         self.rtk_table_widget.setItem(row_idx, col_idx, item)
 
-            except Exception as e:
+            except ValueError as e:
+                self.show_modal("error", parent=self.main_frame, title=" Invalid Excel File", description=f"Please enter a valid excel file(rtk) to proceed.\n{e}")
                 self.status_message.setText(f"파일 로드 중 오류 발생: {e}")
+                return
             
             self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("에포크"), 80)
             self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위성수"), 80)
@@ -1121,6 +1140,7 @@ class CcpManager(QMainWindow):
         if self.rtk_data_path is not None:
             filename = os.path.join(self.rtk_data_path, 'temp_tr.dat')
         else:
+            self.show_modal("error", parent=self.main_frame, title=" NOT Input RTK Data", description="Please enter an excel file(rtk) to proceed.")
             self.status_message.setText("RTK data가 입력되지 않았습니다.")
             return
         
@@ -1142,6 +1162,7 @@ class CcpManager(QMainWindow):
                 row_data = df.iloc[i].values.tolist()
                 file.write(f'{row_data[0]}\t{row_data[1]}\t{row_data[2]}\n')
 
+        self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"tr.dat 파일이 성공적으로 저장되었습니다.\n{filename}")
         self.status_message.setText(f"tr.dat 파일이 성공적으로 저장되었습니다: {filename}")
 
     def save_rtk_table(self):
@@ -1168,6 +1189,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_data.xlsx')
         wb.save(savas_filename)
+        self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"RTK_data가 성공적으로 생성되었습니다.\n{savas_filename}")
         self.status_message.setText(f"Save RTK_data_table to '{savas_filename}' successfully.")
     
     def rtk_sort(self):
@@ -1258,10 +1280,17 @@ class CcpManager(QMainWindow):
                         not_found.append(self.rtk_table_widget.item(i, 0).text())
                         self.rtk_table_widget.item(i, 21).setText("")
                         self.rtk_table_widget.item(i, 22).setText("")
-                        self.rtk_table_widget.item(i, 23).setText("") 
-                self.status_message.setText(f"주소검색을 마쳤습니다. 미작성된 소재지{str(not_found)}를 확인하세요.")
+                        self.rtk_table_widget.item(i, 23).setText("")
+
+                message = "주소검색을 마쳤습니다."
+                if not_found:
+                    message = f"주소검색을 마쳤습니다.\n미작성된 소재지{str(not_found)}를 확인하세요."
+                
+                self.show_modal("success", parent=self.main_frame, title=" Searching is Done", description=message)
+                self.status_message.setText(f"{message}")
 
         except Exception as e:
+            self.show_modal("error", parent=self.main_frame, title=" Unknown Error", description=f"{e}")
             self.status_message.setText(str(e))
 
     def rtk_cover(self):
@@ -1270,20 +1299,20 @@ class CcpManager(QMainWindow):
         template_path = self.RTK_TEMPLATE
         sheet_name = '@표지'
 
-        # Load the template workbook
-        copy_success = self.copy_resource_to_file(template_path, record_file)
-        if not copy_success:
-            self.status_message.setText("[표지] 파일 복사에 실패했습니다.")
-            raise FileExistsError("파일 복사에 실패했습니다.")
-        
+        try:
+            # Load the template workbook
+            copy_success = self.copy_resource_to_file(template_path, record_file)
+            if not copy_success:
+                self.status_message.setText("[표지] 파일 복사에 실패했습니다.")
+                raise FileExistsError("파일 복사에 실패했습니다.")
+        except FileExistsError:
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[표지]파일 복사에 실패했습니다.")
+            return
+            
         new_wb = load_workbook(record_file)
         
-        # Ensure the specified sheet exists
-        if sheet_name not in new_wb.sheetnames:
-            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
-        
         # Get the sheet to copy
-        record_sheet = new_wb.active
+        record_sheet = new_wb[sheet_name]
 
         # Remove the default sheet created in the new workbook
         for sht in new_wb.sheetnames:
@@ -1322,6 +1351,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_표지.xlsx')
         new_wb.save(savas_filename)
+        self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[표지]를 성공적으로 저장하였습니다.\n{savas_filename}")
         self.status_message.setText(f"Save to '{savas_filename}' successfully.")
 
     def rtk_record(self):
@@ -1330,17 +1360,17 @@ class CcpManager(QMainWindow):
         template_path = self.RTK_TEMPLATE
         sheet_name = '@관측기록부'
 
-        # Load the template workbook
-        copy_success = self.copy_resource_to_file(template_path, record_file)
-        if not copy_success:
-            self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
-            raise FileExistsError("파일 복사에 실패했습니다.")
-        
+        try:
+            # Load the template workbook
+            copy_success = self.copy_resource_to_file(template_path, record_file)
+            if not copy_success:
+                self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
+                raise FileExistsError("파일 복사에 실패했습니다.")
+        except FileExistsError:
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측기록부]파일 복사에 실패했습니다.")
+            return
+            
         new_wb = load_workbook(record_file)
-        
-        # Ensure the specified sheet exists
-        if sheet_name not in new_wb.sheetnames:
-            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
         
         # Get the sheet to copy
         record_sheet = new_wb[sheet_name]
@@ -1354,9 +1384,13 @@ class CcpManager(QMainWindow):
 
         copy_row_with_merge(record_sheet, 17, 17, survey_count-1)
 
-        if survey_count % 2 == 1:
-            self.status_message.setText('관측기록이 짝수 회가 아닙니다.')
-            raise ValueError('관측기록이 짝수 회가 아닙니다.')
+        try:
+            if survey_count % 2 == 1:
+                self.status_message.setText('관측기록이 짝수 회가 아닙니다.')
+                raise ValueError('관측기록이 짝수 회가 아닙니다.')
+        except ValueError:
+            self.show_modal("error", parent=self.main_frame, title=" Invalid Survey Count", description=f"관측기록이 짝수 회가 아닙니다.\n검사 후 다시 시도하세요.")
+            return
 
         # set font, alignment, border style
         set_font(record_sheet[f"B17:P{17 + survey_count-1}"], sz=9)
@@ -1411,6 +1445,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측기록부.xlsx')
         new_wb.save(savas_filename)
+        self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[관측기록부]가 성공적으로 저장되었습니다.\n{savas_filename}")
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
     def rtk_result(self):
@@ -1419,17 +1454,18 @@ class CcpManager(QMainWindow):
         template_path = self.RTK_TEMPLATE
         sheet_name = '@관측결과부'
 
-        # Load the template workbook
-        copy_success = self.copy_resource_to_file(template_path, record_file)
-        if not copy_success:
-            self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
-            raise FileExistsError("파일 복사에 실패했습니다.")
+        try:
+            # Load the template workbook
+            copy_success = self.copy_resource_to_file(template_path, record_file)
+            if not copy_success:
+                self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
+                raise FileExistsError("파일 복사에 실패했습니다.")
+            
+        except FileExistsError:
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측기록부]파일 복사에 실패했습니다.")
+            return  
         
         new_wb = load_workbook(record_file)
-        
-        # Ensure the specified sheet exists
-        if sheet_name not in new_wb.sheetnames:
-            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
         
         # Get the sheet to copy
         record_sheet = new_wb[sheet_name]
@@ -1489,6 +1525,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측결과부.xlsx')
         new_wb.save(savas_filename)
+        self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[관측결과부]가 성공적으로 저장되었습니다.\n{savas_filename}")
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
     def rtk_ilram(self):
@@ -1497,17 +1534,17 @@ class CcpManager(QMainWindow):
         template_path = self.RTK_TEMPLATE
         sheet_name = '@기준점일람표'
 
-        # Load the template workbook
-        copy_success = self.copy_resource_to_file(template_path, record_file)
-        if not copy_success:
-            self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
-            raise FileExistsError("파일 복사에 실패했습니다.")
+        try:
+            # Load the template workbook
+            copy_success = self.copy_resource_to_file(template_path, record_file)
+            if not copy_success:
+                self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
+                raise FileExistsError("파일 복사에 실패했습니다.")
+        except FileExistsError:
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측기록부]파일 복사에 실패했습니다.")
+            return
         
         new_wb = load_workbook(record_file)
-        
-        # Ensure the specified sheet exists
-        if sheet_name not in new_wb.sheetnames:
-            raise ValueError(f"Sheet '{sheet_name}' not found in the template file.")
         
         # Get the sheet to copy
         record_sheet = new_wb[sheet_name]
@@ -1560,6 +1597,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_기준점일람표.xlsx')
         new_wb.save(savas_filename)
+        self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[기준점일람표]가 성공적으로 저장되었습니다.\n{savas_filename}")
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
     
     def rtk_report_all(self):
@@ -1649,6 +1687,7 @@ class CcpManager(QMainWindow):
             self.status_message.setText(f"파일이 성공적으로 로드되었습니다: {file_path}")
 
         except Exception as e:
+            self.show_modal("error", parent=self.main_frame, title=" Cannot Load Pickle", description=f"파일 로드 중 오류 발생:\n{e}")
             self.status_message.setText(f"파일 로드 중 오류 발생: {e}")    
 
     def loadProject(self):
@@ -1684,18 +1723,24 @@ class CcpManager(QMainWindow):
             # pickle 파일로 저장
             with open(file_path, mode='wb') as file:
                 pickle.dump(data, file)
-
+            self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"테이블이 성공적으로 저장되었습니다.\n{file_path}")
             self.status_message.setText(f"파일이 성공적으로 저장되었습니다: {file_path}")
+
         except Exception as e:
+            self.show_modal("error", parent=self.main_frame, title=" Cannot Save Pickle", description=f"파일 저장 중 오류 발생:\n{e}")
             self.status_message.setText(f"파일 저장 중 오류 발생: {e}") 
     
     def getDatFile(self):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getOpenFileName(self, "Open TR.DAT File", "", "DAT Files (*.dat);;All Files (*)", options=options)
         if fileName:
-            self.tr = fileName
-            self.loadDataToTable(fileName)
-            self.status_message.setText(f"파일이 성공적으로 로드되었습니다: {fileName}")
+            try:
+                self.tr = fileName
+                self.loadDataToTable(fileName)
+                self.show_modal("success", parent=self.main_frame, title=" Loading Success", description=f"tr.dat 파일이 성공적으로 로드되었습니다.\n{fileName}")
+                self.status_message.setText(f"파일이 성공적으로 로드되었습니다: {fileName}")
+            except Exception as e:
+                self.show_modal("error", parent=self.main_frame, title=" Cannot Load tr.dat", description=f"파일 로드 중 오류 발생:\n{e}")
 
     def loadDataToTable(self, fileName):
         with open(fileName, 'r') as file:
@@ -1735,7 +1780,7 @@ class CcpManager(QMainWindow):
 
         input_data = {'도선등급': grade, '도선명': name, '설치년월일': install_date, '조사년월일': survey_date, 
                       "조사자(직)": surveyor_position, "조사자(성명)": surveyor, "조사내용": findings, "원점": origin}
-
+        
         for k, v in input_data.items():
             self.table_widget.set_column_value(k, v)
         
@@ -1778,6 +1823,7 @@ class CcpManager(QMainWindow):
                 if gdf is None: 
                     return
                 
+                not_found = []
                 for i in range(self.table_widget.rowCount()):
                     location = find_attributes_containing_point(gdf, (float(self.table_widget.item(i, 2).text()), float(self.table_widget.item(i, 1).text())), ["PNU", "JIBUNJIMOK", "DOHO"])
                     if not location is None:
@@ -1786,12 +1832,21 @@ class CcpManager(QMainWindow):
                         self.table_widget.item(i, 7).setText(CifGeoDataFrame().pnu2jibun(pnu))
                         self.table_widget.item(i, 8).setText(self.dom_to_doho(dom)) 
                     else:
+                        not_found.append(self.table_widget.item(i, 0).text())
                         self.table_widget.item(i, 6).setText("")
                         self.table_widget.item(i, 7).setText("")
                         self.table_widget.item(i, 8).setText("") 
 
-                self.status_message.setText("주소검색을 마쳤습니다. 미작성된 소재지를 확인하세요.")
+
+                message = "주소검색을 마쳤습니다."
+                if not_found:
+                    message = f"주소검색을 마쳤습니다.\n미작성된 소재지 번호{str(not_found)}를 확인하세요."
+    
+                self.show_modal("success", parent=self.main_frame, title=" Searching is Done", description=message)    
+                self.status_message.setText(f"{message}")
+
         except Exception as e:
+            self.show_modal("error", parent=self.main_frame, title=" Unknown Error", description=f"{e}")
             self.status_message.setText(str(e))
     
     def dom_to_doho(self, dom):
@@ -1802,8 +1857,11 @@ class CcpManager(QMainWindow):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getSaveFileName(self, "Save project", "", "Pickle Files (*.pickle)", options=options)
         if fileName:
-            self.save_table_to_pickle(self.table_widget, fileName)
-            self.status_message.setText(f"파일이 성공적으로 저장되었습니다: {fileName}")
+            try:
+                self.save_table_to_pickle(self.table_widget, fileName)
+                self.status_message.setText(f"파일이 성공적으로 저장되었습니다: {fileName}")
+            except Exception as e:
+                self.show_modal("error", parent=self.main_frame, title=" Cannot Save Pickle", description=f"파일 저장 중 오류 발생:\n{e}")
 
     def tablewidget_to_dataframe(self, table_widget: QTableWidget) -> pd.DataFrame:
         rows = table_widget.rowCount()
@@ -1858,22 +1916,34 @@ class CcpManager(QMainWindow):
                         {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF19", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
             ]  
 
-            # 실제 성과표 작성
-            temporary_path = '_temp.xlsx'
-            success = self.copy_resource_to_file(self.TEMPLATE, temporary_path)
-            if not success:
-                self.status_message.setText("[성과표] 파일 복사에 실패했습니다.")
-                raise FileExistsError("파일 복사에 실패했습니다.")
-            
-            reporter = ReportFromDataframe(template=temporary_path, sheetname='서식', savefile=fileName, dataframe=table_df, 
-                                          max_row=26, border_settings=border_settings, mappings=mappings)
-            reporter.report()
-            self.status_message.setText(f"성과표가 성공적으로 저장되었습니다: {fileName}")
+            try:
+                # 실제 성과표 작성
+                temporary_path = '_temp.xlsx'
+                success = self.copy_resource_to_file(self.TEMPLATE, temporary_path)
+                if not success:
+                    self.status_message.setText("[성과표] 파일 복사에 실패했습니다.")
+                    raise FileExistsError("파일 복사에 실패했습니다.")
+                
+                reporter = ReportFromDataframe(template=temporary_path, sheetname='서식', savefile=fileName, dataframe=table_df, 
+                                            max_row=26, border_settings=border_settings, mappings=mappings)
+                reporter.report()
+                self.status_message.setText(f"성과표가 성공적으로 저장되었습니다: {fileName}")
+                self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[성과표]가 성공적으로 저장되었습니다.\n{fileName}")
+
+            except FileExistsError as e:
+                self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[성과표]파일 복사에 실패했습니다.")
+                return
+
 
     def on_update_code(self):
-        db = CodeGoKr().get_db()
-        if not db is None:
-            self.status_message.setText(f'Code 업데이트 완료...{db}')
+        try:
+            db = CodeGoKr().get_db()
+            if not db is None:
+                self.status_message.setText(f'Code 업데이트 완료...{db}')
+                self.show_modal("success", parent=self.main_frame, title=" Update Code", description=f"Code 업데이트 완료...\n{db}")
+        except Exception as e:
+            self.show_modal("error", parent=self.main_frame, title=" Cannot Update Code", description=f"Code 업데이트 중 오류 발생:\n{e}")  
+
 
     def on_classify_image(self):
         dialog = DialogRenameImage()
@@ -1885,7 +1955,6 @@ class CcpManager(QMainWindow):
 
     def _headerindex(self, label:str, listofheaders = None) -> int:
         listofheaders = self.HEADER_LABELS if listofheaders is None else listofheaders
-
         return listofheaders.index(label)
     
     def get_stylesheet_from_resource(self, resource_path):
