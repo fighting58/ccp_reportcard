@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QRadioButton, QTableWidget, QToolBar, QButtonGroup, QStyledItemDelegate,
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, 
-                                QSizePolicy, QAbstractItemView, QMenu, QLabel, QComboBox)
+                                QSizePolicy, QAbstractItemView, QMenu, QLabel, QComboBox, QInputDialog, QSpinBox)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize, QFile, QIODevice, QTextStream
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction
 import resources
@@ -784,6 +784,11 @@ class CcpManager(QMainWindow):
         self.column_hide.setObjectName("column-hide")
         self.column_hide.setToolTip("컬럼 숨기기")
         self.column_hide.setFixedWidth(30)
+        self.fill_number = QPushButton(icon=QIcon(':resources/icons/fill-numbers.svg'), parent=self)
+        self.fill_number.setIconSize(QSize(24, 24))
+        self.fill_number.setObjectName("fill_number")
+        self.fill_number.setToolTip("자동번호 입력")
+        self.fill_number.setFixedWidth(30)
         temp_label1 = QLabel(self)
         temp_label1.setObjectName("temp_label1")
         self.table_to_tr = QPushButton(icon=QIcon(':resources/icons/point_black.png'), parent=self)
@@ -798,6 +803,7 @@ class CcpManager(QMainWindow):
         self.save_table.setFixedWidth(30)
         self.band.setFixedHeight(30)
         hlayout_table.addWidget(self.column_hide)
+        hlayout_table.addWidget(self.fill_number)
         hlayout_table.addWidget(temp_label1)
         hlayout_table.addWidget(self.table_to_tr)
         hlayout_table.addWidget(self.save_table)
@@ -810,10 +816,20 @@ class CcpManager(QMainWindow):
         self.rtk_table_widget.setWordWrap(False)
         self.rtk_table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.rtk_table_widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
-        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("시작"), 160)
-        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("종료"), 160)
-        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위도"), 140)
-        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("경도"), 150)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("번호"), 110)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("시작"), 150)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("종료"), 150)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("에포크"), 60)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("수평"), 80)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("수직"), 80)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위도"), 130)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("경도"), 140)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("타원체고"), 80)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위성수"), 60)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("PDOP"), 50)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("HDOP"), 50)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("VDOP"), 50)
+        self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("토지소재(동리)"), 240)   
 
         self.table_widget = CustomTableWidget(self)
         self.table_widget.setObjectName("table_widget")
@@ -860,6 +876,7 @@ class CcpManager(QMainWindow):
 
         # signal-slot connection
         self.column_hide.toggled.connect(self.rtk_table_hide_column)
+        self.fill_number.clicked.connect(self.auto_fill_number)
         self.table_to_tr.clicked.connect(self.table_to_trdat)
         self.rtk_xlsx_button.clicked.connect(self.loadRTKdata)
         self.save_table.clicked.connect(self.save_rtk_table)
@@ -1068,6 +1085,19 @@ class CcpManager(QMainWindow):
                 self.rtk_table_widget.setColumnHidden(col, False)
                 self.column_hide.setToolTip('컬럼 숨기기')
 
+    def auto_fill_number(self):
+
+        if self.rtk_data_file is None:
+            self.show_modal("error", parent=self.main_frame, title=" NOT Input RTK Data", description="RTK 데이터가 입력되지 않았습니다.")
+            return
+        
+        start_number, valid = QInputDialog.getInt(self, "자동번호 입력", "시작 번호", 1, 1, 999999, 1)
+        if valid:
+            for row in range(0, self.rtk_table_widget.rowCount(), 2):
+                self.rtk_table_widget.item(row, 0).setText(str(start_number))
+                start_number += 1
+
+
     # 리소스에서 파일을 복사하는 함수
     def copy_resource_to_file(self, resource_path, destination_path):
         resource = QFile(resource_path)
@@ -1132,9 +1162,6 @@ class CcpManager(QMainWindow):
                 self.status_message.setText(f"파일 로드 중 오류 발생: {e}")
                 return
             
-            self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("에포크"), 80)
-            self.rtk_table_widget.setColumnWidth(self.rtk_table_widget.get_column_header().index("위성수"), 80)
-
     def table_to_trdat(self):
         """ tr.dat 파일 생성 """
         if self.rtk_data_path is not None:
@@ -1825,7 +1852,9 @@ class CcpManager(QMainWindow):
                 
                 not_found = []
                 for i in range(self.table_widget.rowCount()):
-                    location = find_attributes_containing_point(gdf, (float(self.table_widget.item(i, 2).text()), float(self.table_widget.item(i, 1).text())), ["PNU", "JIBUNJIMOK", "DOHO"])
+                    location = find_attributes_containing_point(gdf, (float(self.table_widget.item(i, 2).text()), 
+                                                                      float(self.table_widget.item(i, 1).text())),
+                                                                      ["PNU", "JIBUNJIMOK", "DOHO"])
                     if not location is None:
                         pnu, jibun, dom = location.iloc[0, :]
                         self.table_widget.item(i, 6).setText(CifGeoDataFrame().getDistrictName(pnu))
@@ -1836,7 +1865,6 @@ class CcpManager(QMainWindow):
                         self.table_widget.item(i, 6).setText("")
                         self.table_widget.item(i, 7).setText("")
                         self.table_widget.item(i, 8).setText("") 
-
 
                 message = "주소검색을 마쳤습니다."
                 if not_found:
