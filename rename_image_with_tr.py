@@ -17,7 +17,7 @@ class DialogRenameImage(QDialog):
         self._tr = None     # tr.dat 파일 경로
 
         self.setWindowTitle("TR 점번호로 파일명 변경")
-        self.setGeometry(100, 100, 600, 200)
+        self.setGeometry(100, 100, 500, 200)
 
         # 레이아웃 설정
         layout = QVBoxLayout()

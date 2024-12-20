@@ -18,7 +18,8 @@ class EnvironmentManager:
         return sections
 
     def get_section(self, section_name) -> dict:
-        return dict(self.config[section_name])
+        if section_name in self.config.sections():
+            return dict(self.config[section_name])
     
     def get_section_keys(self, section_name) -> list:
         return list(self.config[section_name].keys())

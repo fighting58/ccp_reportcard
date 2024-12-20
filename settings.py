@@ -48,7 +48,7 @@ class Settings(QDialog):
     def __init__(self, parent=None):
         super().__init__()
         self.setWindowTitle("환경 설정")
-        self.resize(500, 300)
+        self.resize(500, 206)
         self.setup_UI()
         self.settings = None
 
