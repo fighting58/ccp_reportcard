@@ -1330,7 +1330,7 @@ class CcpManager(QMainWindow):
                     else:
                         location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "DOHO"])
 
-                    if not location is None:
+                    if location is not None:
                         pnu, dom = location.iloc[0, :]
                         self.rtk_table_widget.item(i, 21).setText(CifGeoDataFrame().getDistrictName(pnu))
                         self.rtk_table_widget.item(i, 22).setText(CifGeoDataFrame().pnu2jibun(pnu))
