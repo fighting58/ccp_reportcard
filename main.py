@@ -1322,18 +1322,22 @@ class CcpManager(QMainWindow):
                     return
                 
                 not_found = []
-                if "GKEY" in gdf.columns:
-                    shp_from = "landygo"
-                else:
-                    shp_from = "general"
+                shp_from = "landygo" if "GKEY" in gdf.columns else "general"  # GKEY가 있으면 랜디고에서, 아니면 일반 LXGIS
                 
                 for i in range(self.rtk_table_widget.rowCount()):
-                    location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "DOHO"])
+                    if shp_from == "landygo":
+                        location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "GKEY"]) 
+                    else:
+                        location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "DOHO"])
+
                     if not location is None:
                         pnu, dom = location.iloc[0, :]
                         self.rtk_table_widget.item(i, 21).setText(CifGeoDataFrame().getDistrictName(pnu))
                         self.rtk_table_widget.item(i, 22).setText(CifGeoDataFrame().pnu2jibun(pnu))
-                        self.rtk_table_widget.item(i, 23).setText(self.dom_to_doho(dom)) 
+                        if shp_from == "landygo":
+                            self.rtk_table_widget.item(i, 23).setText(f'{str(dom)[-2:]}') 
+                        else:
+                            self.rtk_table_widget.item(i, 23).setText(self.dom_to_doho(dom)) 
                     else:
                         not_found.append(self.rtk_table_widget.item(i, 0).text())
                         self.rtk_table_widget.item(i, 21).setText("")
