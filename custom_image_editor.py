@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
 from PySide6.QtCore import Qt, Signal,Slot, QSize, QRectF, QSizeF, QPointF
 from PySide6.QtGui import QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QPixmap, QFont, QKeyEvent, QFontDatabase, QMouseEvent, QCursor
 import resources
+from textstyle_dialog import TextStyleDialog
 
 class CustomCursor(QCursor):
     def __init__(self):
@@ -26,6 +27,11 @@ class TextItem:
         self.position = position
         self.current_font = font
         self.color = color
+        self.backfill = False
+        self.bound_line_color = None
+        self.bound_line_width = 0
+        self.bound_line_style = "Solid"
+        self.backfill_color = None
         self.rect = None
         self.is_selected = False
 
@@ -170,6 +176,11 @@ class ImageEditor(QMainWindow):
 
         self.toolbar.addAction(self.font_style_action)
 
+        # 폰트 통합 변경      
+        self.text_style_action = QAction(QIcon('font-square-3.svg'),"텍스트 스타일", self)
+        self.text_style_action.triggered.connect(self.change_text_style)
+        self.toolbar.addAction(self.text_style_action)
+
         # 글자색상 설정
         self.font_color_btn = QPushButton("T")
         self.font_color_btn.setFixedSize(QSize(24, 24))
@@ -199,7 +210,7 @@ class ImageEditor(QMainWindow):
         self.h_slider = QSlider(line_width_setting)
         self.h_slider.setFixedSize(40, 10)
         self.h_slider.setMinimum(1)
-        self.h_slider.setMaximum(50)
+        self.h_slider.setMaximum(10)
         self.h_slider.setValue(self.line_width)
         self.h_slider.setOrientation(Qt.Horizontal)
         self.h_slider.valueChanged.connect(self.change_line_width)
@@ -297,18 +308,9 @@ class ImageEditor(QMainWindow):
             self.font_size_combo.setCurrentText(str(self.current_font.pointSize()))
 
     def change_font_style(self, style):        
-        if style == "Bold":
-            self.current_font.setBold(True)
-            self.current_font.setItalic(False)
-        elif style == "Italic":
-            self.current_font.setBold(False)
-            self.current_font.setItalic(True)
-        elif style == "Bold Italic":
-            self.current_font.setBold(True)
-            self.current_font.setItalic(True)
-        else:  # Normal
-            self.current_font.setBold(False)
-            self.current_font.setItalic(False)
+        self.current_font.setBold(True) if 'bold' in style.lower() else self.current_font.setBold(False)
+        self.current_font.setItalic(True) if 'italic' in style.lower() else self.current_font.setItalic(False)
+        self.current_font.setUnderline(True) if 'underline' in style.lower() else self.current_font.setUnderline(False)
 
         self.update_selected_text_style()
 
@@ -318,6 +320,30 @@ class ImageEditor(QMainWindow):
         for text_item in self.selected_texts:
             text_item.current_font = QFont(self.current_font)
             text_item.color = QColor(self.current_font_color)
+
+    def change_text_style(self):
+        dialog = TextStyleDialog(self)
+        dialog.values_summited.connect(self.update_selected_text_style_from_dialog) 
+        dialog.exec()
+
+    def update_selected_text_style_from_dialog(self, values:dict):
+        if not self.selected_texts:
+            return
+        for text_item in self.selected_texts:
+            text_item.current_font = values['font']            
+            text_item.color = values['font_color']
+            rect_line_width = values['rect_line_width']
+            if rect_line_width == 0:
+                text_item.backfill = False
+            else:
+                text_item.backfill = True
+                text_item.bound_line_width = rect_line_width
+                text_item.bound_line_color = values['rect_line_color']
+                text_item.bound_line_style = values['rect_line_style']
+                text_item.backfill_color = values['rect_fill_color']
+        
+        self.update_image
+
 
     def open_image(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "이미지 열기", "", "이미지 파일 (*.png *.jpg *.bmp *.jpeg)")
@@ -591,50 +617,69 @@ class ImageEditor(QMainWindow):
         if not self.layers:
             self.image_label.setPixmap(result)
             return
-        painter = QPainter(result)
-        
-        for layer in self.layers[::-1]:
-            # painter.setOpacity(0.8)
-            painter.drawPixmap(0, 0, layer.pixmap)            
+        try:
+            painter = QPainter(result)
             
-            for line in layer.lines:
-                pen = QPen(line.color)
-                pen.setWidth(line.width)
-                if line.is_dashed:
-                    pen.setStyle(Qt.DashLine)
-                if line.is_selected:
-                    pen.setWidth(3)
-                painter.setPen(pen)
-                painter.drawLine(line.start, line.mid)
-                painter.drawLine(line.mid, line.end)
+            for layer in self.layers[::-1]:
+                # painter.setOpacity(0.8)
+                painter.drawPixmap(0, 0, layer.pixmap)            
                 
-                if line.is_selected:
-                    painter.setBrush(Qt.red)
-                    painter.drawEllipse(line.start, 5, 5)
-                    painter.drawEllipse(line.mid, 5, 5)
-                    painter.drawEllipse(line.end, 5, 5)
+                for line in layer.lines:
+                    pen = QPen(line.color)
+                    pen.setWidth(line.width)
+                    if line.is_dashed:
+                        pen.setStyle(Qt.DashLine)
+                    if line.is_selected:
+                        pen.setWidth(3)
+                    painter.setPen(pen)
+                    painter.drawLine(line.start, line.mid)
+                    painter.drawLine(line.mid, line.end)
+                    
+                    if line.is_selected:
+                        painter.setBrush(Qt.red)
+                        painter.drawEllipse(line.start, 5, 5)
+                        painter.drawEllipse(line.mid, 5, 5)
+                        painter.drawEllipse(line.end, 5, 5)
+                
+                for text_item in layer.texts:
+                    painter.setFont(text_item.current_font)
+                    text_rect = painter.boundingRect(QRectF(text_item.position, QSizeF()), Qt.AlignLeft, text_item.text)
+                    if text_item.backfill:
+                        expanded_rect = text_rect.adjusted(-5, -2, 5, 2)                        
+                        bound_pen = QPen(text_item.bound_line_color)
+                        bound_pen.setWidth(text_item.bound_line_width)
+                        if text_item.bound_line_style == "Solid":
+                            bound_pen.setStyle(Qt.SolidLine)
+                        else:
+                            bound_pen.setStyle(Qt.DashLine)
+
+                        painter.setPen(bound_pen)                    
+                        painter.drawRect(expanded_rect)
+                        if text_item.backfill_color is not None:
+                            fill_color = text_item.backfill_color
+                            fill_color.setAlpha(178)  # 70% 투명도
+                            painter.fillRect(expanded_rect, fill_color)  # 70% 투명도
+
+                    painter.setPen(text_item.color)
+                    painter.drawText(text_rect, text_item.text)
+                    text_item.rect = text_rect
+                    
+                    if text_item in self.selected_texts:
+                        painter.setPen(QPen(Qt.red, 1, Qt.DashLine))
+                        painter.drawRect(text_rect)
             
-            for text_item in layer.texts:
-                painter.setFont(text_item.current_font)
-                painter.setPen(text_item.color)
-                text_rect = painter.boundingRect(QRectF(text_item.position, QSizeF()), Qt.AlignLeft, text_item.text)
-                painter.drawText(text_rect, text_item.text)
-                text_item.rect = text_rect
-                
-                if text_item in self.selected_texts:
-                    painter.setPen(QPen(Qt.red, 1, Qt.DashLine))
-                    painter.drawRect(text_rect)
-        
-        if self.temp_line:
-            painter.setPen(QPen(self.line_color))
-            if len(self.temp_line) == 2:
-                painter.drawLine(self.temp_line[0], self.temp_line[1])
-            elif len(self.temp_line) == 3:
-                painter.drawLine(self.temp_line[0], self.temp_line[1])
-                painter.drawLine(self.temp_line[1], self.temp_line[2])
-        
-        painter.end()
-        self.image_label.setPixmap(result)
+            if self.temp_line:
+                painter.setPen(QPen(self.line_color))
+                if len(self.temp_line) == 2:
+                    painter.drawLine(self.temp_line[0], self.temp_line[1])
+                elif len(self.temp_line) == 3:
+                    painter.drawLine(self.temp_line[0], self.temp_line[1])
+                    painter.drawLine(self.temp_line[1], self.temp_line[2])
+        except Exception as e:
+            print(e)
+        finally:
+            painter.end()
+            self.image_label.setPixmap(result)
 
     def update_cursor(self, pos):
         if self.drawing:

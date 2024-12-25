@@ -2,11 +2,12 @@ import configparser
 import os
 
 class EnvironmentManager:
-    def __init__(self):
+    def __init__(self, ini_file='config.ini'):
         self.config = configparser.ConfigParser()
-        if not os.path.exists('config.ini'):
+        self.ini = ini_file
+        if not os.path.exists(self.ini):
             self._update()
-        self.config.read('config.ini')
+        self.config.read(self.ini)
     
     def get_all_section_names(self):
         return self.config.sections()
@@ -20,6 +21,7 @@ class EnvironmentManager:
     def get_section(self, section_name) -> dict:
         if section_name in self.config.sections():
             return dict(self.config[section_name])
+        return dict()
     
     def get_section_keys(self, section_name) -> list:
         return list(self.config[section_name].keys())
@@ -62,7 +64,7 @@ class EnvironmentManager:
         self._update()
     
     def _update(self):
-        with open('config.ini', 'w') as configfile:
+        with open(self.ini, 'w') as configfile:
             self.config.write(configfile)
         return
     
