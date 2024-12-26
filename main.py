@@ -1238,6 +1238,7 @@ class CcpManager(QMainWindow):
     def on_table_update_request(self, row, path, filename):
         self.table_widget.setCellItemAligned(row, self._headerindex("사진파일(경로)"), path)
         self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), filename)
+        self.show_modal("success", parent=self.main_frame, title=" Successfully Apllied", description=f"성공적으로 적용/저장되었습니다.\n{filename}")
 
     @property
     def image_folder(self): 

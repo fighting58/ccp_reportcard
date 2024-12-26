@@ -17,6 +17,7 @@ class TextStyleDialog(QDialog):
         self.resize(300, 260)
 
         self.text_font = QFont()
+        self.text_font_style = "Normal"
 
         self.font_color = QColor('#0000ff')
         self.envrioment_manager = EnvironmentManager('image_editor.ini')
@@ -53,7 +54,7 @@ class TextStyleDialog(QDialog):
         self.font_size_spin = QSpinBox(self)
         self.font_size_spin.setRange(8, 50)        
         self.font_style_combo = QComboBox(self)
-        self.font_style_combo.addItems(["Normal", "Bold", "Italic", "Underline", 'bold italic', 'bold underline', 'italic underline', 'bold italic underline'])
+        self.font_style_combo.addItems(["Normal", "Bold", "Italic", "Underline", 'Bold italic', 'Bold underline', 'Italic underline', 'Bold italic underline'])
 
         self.rect_color_btn = QPushButton("Boundary Color", self)        
         
@@ -146,11 +147,12 @@ class TextStyleDialog(QDialog):
             section_name = "SubTitle-Style"
         self.read_environment(section_name)
         self.update_dialog()
+        self.apply_widget_color()
 
     def update_dialog(self):
         self.font_family_combo.setCurrentText(self.text_font.family())
         self.font_size_spin.setValue(self.text_font.pointSize())
-        self.font_style_combo.setCurrentText(self.text_font.styleName())
+        self.font_style_combo.setCurrentText(self.text_font_style)
         self.font_color_btn.setText(self.font_color.name())
         self.rect_line_width_spin.setValue(self.rect_line_width)
         self.rect_color_btn.setText(self.rect_line_color.name())
@@ -172,6 +174,7 @@ class TextStyleDialog(QDialog):
         self.text_font.setBold(True) if 'bold' in config_dict.get('font-style', 'normal').lower() else self.text_font.setBold(False)
         self.text_font.setItalic(True) if 'italic' in config_dict.get('font-style', 'normal').lower() else self.text_font.setItalic(False)  
         self.text_font.setUnderline(True) if 'underline' in config_dict.get('font-style', 'normal').lower() else self.text_font.setUnderline(False)  
+        self.text_font_style = config_dict.get('font-style', 'normal')
         self.font_color =  QColor(config_dict.get('font-color', '#0000ff'))
         self.rect_line_width = int(config_dict.get('rect-line-width', 2))
         self.rect_line_style = config_dict.get('rect-line-style', 'Solid')

@@ -9,6 +9,7 @@ from PySide6.QtGui import QKeySequence, QPainter, QPen, QColor, QIcon, QAction, 
 import resources
 from textstyle_dialog import TextStyleDialog
 
+
 class CustomCursor(QCursor):
     def __init__(self):
         super().__init__()
@@ -247,12 +248,12 @@ class ImageEditor(QMainWindow):
 
         # Toolbar2
         self.toolbar2 = QToolBar("Apply Image Toolbar")
+        self.toolbar2.setFixedHeight(30)
         self.addToolBar(Qt.TopToolBarArea, self.toolbar2)
-
-        self.image_apply_button = QPushButton("Save && apply", self.toolbar2)
+        self.image_apply_button = QAction(QIcon("apply.svg"), "이미지 적용", self.toolbar2)  #====================================================================
         self.image_apply_button.setShortcut(QKeySequence("Ctrl+Return"))
-        self.image_apply_button.clicked.connect(self.on_request_update)
-        self.toolbar2.addWidget(self.image_apply_button)
+        self.image_apply_button.triggered.connect(self.on_request_update)
+        self.toolbar2.addAction(self.image_apply_button)
 
     # 새로운 메서드들
     def new_document(self):
@@ -265,6 +266,7 @@ class ImageEditor(QMainWindow):
     def on_request_update(self):
         if not self.table_row is None:
             # self.target_image가 None이면 self.current_image를 사용
+
             if self.target_image is None:
                 path = self.current_image
             # target_image가 파일형식인 경우 디렉토리 경로만 사용, 아니면 전체를 경로로 사용
