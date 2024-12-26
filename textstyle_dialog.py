@@ -3,7 +3,7 @@
 from PySide6.QtWidgets import (QDialog, QFrame, QLabel, QHBoxLayout,QGridLayout, QColorDialog, QPushButton, 
                                QFormLayout, QWidget, QLineEdit, QComboBox, QSpinBox, QDialogButtonBox, QCheckBox)
 from PySide6.QtCore import Qt, QRect, Signal
-from PySide6.QtGui import QColor, QFont, QPen, QBrush, QPixmap, QPainter, QFontDatabase
+from PySide6.QtGui import QColor, QFont, QPen, QBrush, QPixmap, QPainter, QFontDatabase, QPalette
 from environment_manage import EnvironmentManager
 
 class TextStyleDialog(QDialog):
@@ -25,6 +25,7 @@ class TextStyleDialog(QDialog):
         self.read_environment('SubTitle-Style')
 
         self.init_ui()
+        self.apply_widget_color()
         self.update_label()
         self.setStyleSheet("""* {color: black;}""")
 
@@ -48,21 +49,21 @@ class TextStyleDialog(QDialog):
         self.font_family_combo.addItems(self.get_korean_fonts())
         
         self.font_color_btn = QPushButton("Font Color", self)
-        self.font_color_btn.setStyleSheet(f"color: {self.font_color.name()}")
+        
         self.font_size_spin = QSpinBox(self)
         self.font_size_spin.setRange(8, 50)        
         self.font_style_combo = QComboBox(self)
         self.font_style_combo.addItems(["Normal", "Bold", "Italic", "Underline", 'bold italic', 'bold underline', 'italic underline', 'bold italic underline'])
 
         self.rect_color_btn = QPushButton("Boundary Color", self)        
-        self.rect_color_btn.setStyleSheet(f"color: {self.rect_line_color.name()}")
+        
         self.rect_line_width_spin = QSpinBox(self)
         self.rect_line_width_spin.setRange(0, 5)        
 
         self.rect_line_style_combo = QComboBox(self)
         self.rect_line_style_combo.addItems(["Solid", "Dashed"])
         self.rect_fill_btn = QPushButton("Fill Color", self)
-        self.rect_fill_btn.setStyleSheet(f"color: {self.rect_fill_color.name()}")
+        
 
         form_layout.addRow("Text Type", self.text_type_combo)
         form_layout.addRow(self.divide_line)
@@ -154,9 +155,16 @@ class TextStyleDialog(QDialog):
         self.rect_line_width_spin.setValue(self.rect_line_width)
         self.rect_color_btn.setText(self.rect_line_color.name())
         self.rect_fill_btn.setText(self.rect_fill_color.name())
+    
+    def apply_widget_color(self):
+        luminance = 0.2126 * self.font_color.red() + 0.7152 * self.font_color.green() + 0.0722 * self.font_color.blue()
+        self.font_color_btn.setStyleSheet(f"color: black; background-color: {self.font_color.name()};") if luminance > 128 else self.font_color_btn.setStyleSheet(f"color: white; background-color: {self.font_color.name()};")
+        luminance = 0.2126 * self.rect_line_color.red() + 0.7152 * self.rect_line_color.green() + 0.0722 * self.rect_line_color.blue()
+        self.rect_color_btn.setStyleSheet(f"color: black; background-color: {self.rect_line_color.name()};") if luminance > 128 else self.rect_color_btn.setStyleSheet(f"color: white; background-color: {self.rect_line_color.name()};")
+        luminance = 0.2126 * self.rect_fill_color.red() + 0.7152 * self.rect_fill_color.green() + 0.0722 * self.rect_fill_color.blue()
+        self.rect_fill_btn.setStyleSheet(f"color: black; background-color: {self.rect_fill_color.name()};") if luminance > 128 else self.rect_fill_btn.setStyleSheet(f"color: white; background-color: {self.rect_fill_color.name()};")
         
-
-
+        
     def read_environment(self, text_type):
         config_dict = self.envrioment_manager.get_section(text_type)
         self.text_font.setFamily(config_dict.get('font-family', '굴림'))
@@ -169,6 +177,7 @@ class TextStyleDialog(QDialog):
         self.rect_line_style = config_dict.get('rect-line-style', 'Solid')
         self.rect_line_color = QColor(config_dict.get('rect-line-color', '#000000'))
         self.rect_fill_color = QColor(config_dict.get('rect-fill-color', '#ffffff'))
+
 
     def boundary_pen(self):
         pen = QPen()
@@ -194,7 +203,7 @@ class TextStyleDialog(QDialog):
         if color.isValid():
             self.font_color = color
             self.font_color_btn.setText(self.font_color.name())
-            self.font_color_btn.setStyleSheet(f"color: {self.font_color.name()}")
+            self.apply_widget_color()
             self.update_label()
 
     def apply_rect_line_color(self):
@@ -202,7 +211,7 @@ class TextStyleDialog(QDialog):
         if color.isValid():
             self.rect_line_color = color
             self.rect_color_btn.setText(self.rect_line_color.name())
-            self.rect_color_btn.setStyleSheet(f"color: {self.rect_line_color.name()}")  
+            self.apply_widget_color()
             self.update_label() 
 
     def apply_rect_line_width(self): 
@@ -218,7 +227,7 @@ class TextStyleDialog(QDialog):
         if color.isValid():
             self.rect_fill_color = color
             self.rect_fill_btn.setText(self.rect_fill_color.name())
-            self.rect_fill_btn.setStyleSheet(f"color: {self.rect_fill_color.name()}")
+            self.apply_widget_color()
             self.update_label()
 
     def get_korean_fonts(self):

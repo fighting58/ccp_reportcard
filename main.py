@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, 
                                 QSizePolicy, QAbstractItemView, QMenu, QLabel, QComboBox, QInputDialog, 
-                                QSpinBox, QDialog, QGraphicsDropShadowEffect)
+                                QSpinBox, QDialog, QGraphicsDropShadowEffect, QTextBrowser)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize, QFile, QIODevice, QTextStream
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QFont
 import resources
@@ -943,6 +943,185 @@ class CcpManager(QMainWindow):
         hlayout_table.addWidget(self.table_to_tr)
         hlayout_table.addWidget(self.save_table)
 
+        self.notice_frame = QFrame(self)
+        self.notice_frame.setFixedWidth(1100)
+        notice_frame_layout = QVBoxLayout(self.notice_frame)
+        self.text_area = QTextBrowser(self.notice_frame)
+        self.text_area.setObjectName("text_area")
+        html_text = """
+        <style>
+        .lawcon {margin-left: 20px; margin-right: 20px; margin-top: 10px; margin-bottom: 10px;}
+
+        p.gtit{
+            color:#151594;
+            font-size: 2rem; 
+            margin:0 0 0 30px;
+            padding:10px 0 0 14px;
+            font-weight:bold;
+        }
+        div.subtit3{
+            float:right;
+            margin:10px 17px 10px 0;
+            padding:6px 10px 8px;
+            border-top:1px solid #e3e3e3;
+            border-bottom:1px solid #e3e3e3;
+            background:#f8f8f1;
+        }
+        p.pty1_de2_1{
+            margin: 5px 0 0 67px;
+        }
+        p.pty1_de2h{
+            margin: 5px 0 0 100px;
+        }
+        span.bl{
+            color:#151594;
+            font-weight:bold;
+        }
+        h2{
+            margin:20px 0 10px 0;
+            color:#1C1C1C; 
+            text-align:center;
+            position: relative;
+        }
+        div.subtit1 {
+            color:#3c7fbc; 
+            text-align:center;
+            padding: 0px 0px 13px 0px; /*2024.01.11. #33957 수정*/
+        }
+
+        div.pty1_table {
+            text-align: center;
+        }
+
+        td, th {
+            padding: 5px;
+            text-align: center;
+        }
+        </style>
+        <div>  &nbsp; </div>
+        <div id="conTop"> 
+            <h2>GNSS에 의한 지적측량규정</h2> 
+            <div class="subtit1">
+                [시행 2020. 8. 10.] [국토교통부예규 제304호, 2020. 8. 10., 일부개정] 
+            </div> 
+        </div>
+
+        <p class="gtit" style="padding-top: 5px; margin-bottom: 0px;"><h3>제2장 선점 및 측량</h3></p>
+        <div class="lawcon"> 
+        <p class="pty1_p4"><span class="bl">제6조(관측)</span> </span> ① 관측 시 위성의 조건은 다음 각 호의 기준에 의한다.&nbsp; 
+        <p class="pty1_de2h">1. 관측점으로부터 위성에 대한 고도각이 15°이상에 위치할 것&nbsp;</p> 
+        <p class="pty1_de2h">2. 위성의 작동상태가 정상일 것&nbsp;</p> 
+        <p class="pty1_de2h">3. 관측점에서 동시에 수신 가능한 위성 수는 정지측량에 의하는 경우에는 4개 이상, 이동측량에 의하는 경우에는 5개 이상일 것&nbsp;</p> 
+        <p class="pty1_de2_1">② GNSS측량기에 입력하는 안테나의 높이 등에 관하여는 GNSS측량기에서 정해진 방법에 따라 측정하고, 관측 후 확인한다.&nbsp;</p> 
+        <p class="pty1_de2_1">③ 관측 시 주의사항은 다음 각 호와 같다.&nbsp;</p> 
+        <p class="pty1_de2h">1. 안테나 주위의 10미터이내에는 자동차 등의 접근을 피할 것&nbsp;</p> 
+        <p class="pty1_de2h">2. 관측 중에는 무전기 등 전파발신기의 사용을 금한다. 다만, 부득이한 경우에는 안테나로부터 100미터이상의 거리에서 사용할 것&nbsp;</p> 
+        <p class="pty1_de2h">3. 발전기를 사용하는 경우에는 안테나로부터 20미터 이상 떨어진 곳에서 사용할 것&nbsp;</p> 
+        <p class="pty1_de2h">4. 관측 중에는 수신기 표시장치 등을 통하여 관측상태를 수시로 확인하고 이상 발생시에는 재관측을 실시할 것&nbsp;</p> 
+        <!-- 호 표시 end --> 
+        <p class="pty1_de2_1">④ 관측 완료 후 점검결과 제1항 내지 제3항의 관측조건에 맞지 아니한 경우에는 다시 관측을 하여야 한다.&nbsp;</p> 
+
+        <p class="pty1_de2_1">⑤ 지적위성측량을 실시하는 경우에는 지적위성측량관측부를 작성하여야 한다.&nbsp;</p> 
+        </div>
+        <p> </p>
+
+        <div class="lawcon"> 
+        <p class="pty1_p4"><span class="bl">제7조(정지측량)</span> GNSS측량기를 사용하여 정지측량방법으로 기초측량 또는 세부측량을 하고자 하는 때에는 다음 각 호의 기준에 의한다. &nbsp; 
+        <p class="pty1_de2h">1. 기지점과 소구점에 GNSS측량기를 동시에 설치하여 세션단위로 실시할 것&nbsp;</p> 
+        <p class="pty1_de2h">2. 관측성과의 기선벡터 점검을 위하여 다른 세션에 속하는 관측망과 1변 이상이 중복되게 관측할 것.&nbsp;</p> 
+        <p class="pty1_de2h">3. 관측시간 등은 다음 표에 의할 것<br>&nbsp;</p> 
+        <div class="pty1_table">
+            <table border="1" cellpadding="0" cellspacing="0" width="80%">
+                <tr>
+                    <th>구분</th> 
+                    <th>지적삼각측량</th>
+                    <th>지적삼각보조측량</th> 
+                    <th>지적도근측량</th>
+                    <th>세부측량</th>
+                </tr>
+                <tr> 
+                    <td>기지점과의 거리</td> 
+                    <td>10Km 미만</td> 
+                    <td>5Km 미만</td>
+                    <td>2Km 미만</td>
+                    <td>1Km 미만</td>
+                </tr>
+                <tr> 
+                    <td>세션 관측시간</td> 
+                    <td>60분 이상</td> 
+                    <td>30분 이상</td>
+                    <td>10분 이상</td>
+                    <td>5분 이상</td> 
+                </tr> 
+                <tr> 
+                    <td>데이터 취득간격</td> 
+                    <td>30초 이하</td> 
+                    <td>30초 이하</td> 
+                    <td>15초 이하</td>
+                    <td>15초 이하</td>
+                </tr>
+            </table>
+        </div>
+      </div>
+      <p> </p>
+      <div class="lawcon"> 
+       <p class="pty1_p4"><span class="bl">제8조(이동측량)</span>  ① GNSS측량기를 사용하여 지적도근측량 또는 세부측량을 하고자 하는 경우에는 단일기준국 실시간 이동측량 또는 다중기준국 실시간 이동측량에 의한다.&nbsp; 
+       <p class="pty1_de2_1">② 단일기준국 실시간 이동측량(Single-RTK) 및 다중기준국 실시간 이동측량(Network-RTK)으로 실시할 경우 기준은 다음 각 호와 같다.&nbsp;</p> 
+       <p class="pty1_de2h">1. 관측전 이동국 GNSS측량기의 초기화 작업을 완료할 것&nbsp;</p> 
+       <p class="pty1_de2h">2. 관측 중 위성신호의 단절 또는 통신장치의 이상으로 보정정보를 안정적으로 수신할 수 없는 경우 이동국 GNSS측량기를 재초기화 할 것&nbsp;</p> 
+       <p class="pty1_de2h">3. GNSS측량기 안테나를 기준으로 고도각 15°이상에 정상 작동중인 GNSS위성이 5개 이상일 것&nbsp;</p> 
+       <p class="pty1_de2h">4. GNSS측량기에 표시하는 PDOP이 3이상이거나 위치정밀도가 수평 ±3㎝ 이상 또는 수직 ±5㎝ 이상인 경우 관측을 중지할 것&nbsp;</p> 
+       <p class="pty1_de2h">5. 1, 2회의 관측치가 제5항제4호의 오차 이내일 경우에는 1회 관측치를 기준으로 결과부를 작성&nbsp;</p> 
+       <p class="pty1_de2h">6. 지역좌표를 구하고자 할 경우에는 GNSS측량기에서 제공하는 소프트웨어를 이용하여 좌표변환 계산방법에 의할 것&nbsp;</p> 
+       <p class="pty1_de2h">7. 관측시간 및 관측횟수는 다음 표에 따른다. 다만, 단일기준국 실시간 이동측량(Single-RTK 측량) 시 기선거리는 5㎞이내로 한다.<br>&nbsp;</p> 
+       <div class="pty1_table">
+            <table border="1" cellpadding="0" cellspacing="0" width="80%">
+                <tr>
+                    <th>구분</th> 
+                    <th>관측횟수</th>
+                    <th>관측 간격</th> 
+                    <th>관측시간(고정해)</th>
+                    <th>데이터 쥐득간격</th>
+                </tr>
+                <tr> 
+                    <td>도근측량</td> 
+                    <td>2회</td> 
+                    <td>60분 이상</td>
+                    <td>60초 이상</td>
+                    <td>1초</td>
+                </tr>
+                <tr> 
+                    <td>세부측량</td> 
+                    <td>2회</td> 
+                    <td>60분 이상</td>
+                    <td>15초 이상</td>
+                    <td>1초</td> 
+                </tr> 
+            </table>
+        </div>
+       <p class="pty1_de2_1">③ 단일기준국 실시간 이동측량(Single-RTK 측량)에 의한 방법은 다음 각 호와 같다.&nbsp;</p> 
+       <p class="pty1_de2h">1. 기지점에 기준국을 설치하고 위치를 결정하고자 하는 지적도근점 이나 경계점 등을 이동국으로 하여 GNSS측량기를 순차적으로 설치하여 이동하며 관측을 실시할 것&nbsp;</p> 
+       <p class="pty1_de2h">2. 관측 노선(단위)을 포함하도록 기준국을 달리하여 2회 관측할 것&nbsp;</p> 
+       <p class="pty1_de2_1">④ 다중기준국 실시간 이동측량(Network- RTK 측량)에 의한 방법은 다음 각 호와 같다.&nbsp;</p> 
+       <p class="pty1_de2h">1. 이동국은 보정정보 생성에 사용되는 상시관측소 네트워크 내부에 있을 것. 다만 부득이한 경우 네트워크 외부에서 10㎞ 이내일 것.&nbsp;</p> 
+       <p class="pty1_de2h">2. 통신장치를 이용하여 위성기준점 네트워크 보정신호를 수신하여 고정해를 얻고 이동국을 순차로 이동하면서 관측을 실시할 것&nbsp;</p> 
+       <p class="pty1_de2_1">⑤ 단일기준국 실시간 이동측량(Single-RTK) 및 다중기준국 실시간 이동측량(Network-RTK)에 의한 경우 제2항제1호부터 제4호까지의 조건을 만족하지 못하거나 다음 각 호의 경우에는 측량방법을 달리하여 실시한다.&nbsp;</p> 
+       <p class="pty1_de2h">1. 초기화 시간이 3회 이상 3분을 초과하는 경우&nbsp;</p> 
+       <p class="pty1_de2h">2. 보정정보의 송수신이 불안정한 경우&nbsp;</p> 
+       <p class="pty1_de2h">3. 보정정보 지연시간이 5초 이상인 경우&nbsp;</p> 
+       <p class="pty1_de2h">4. 세션 간 측량성과의 오차가 5.0㎝를 초과하는 경우&nbsp;</p> 
+       <p></p> 
+      </div>
+        
+       <p></p> 
+      </div>        
+
+
+        """
+        self.text_area.setHtml(html_text)
+        self.text_area.setStyleSheet('color:black; background-color: #cbcbcb;')
+        notice_frame_layout.addWidget(self.text_area)
+
         self.rtk_table_widget = CustomTableWidget()
         self.rtk_table_widget.setObjectName("rtk_table_widget")
         self.rtk_table_widget.setColumnCount(len(self.RTK_HEADERS))
@@ -977,6 +1156,7 @@ class CcpManager(QMainWindow):
         self.table_widget.verticalHeader().hide()
         
         vlayout2.addWidget(self.band)
+        vlayout2.addWidget(self.notice_frame)
         vlayout2.addWidget(self.rtk_table_widget)
         vlayout2.addWidget(self.table_widget)
         main_frame_layout.addLayout(vlayout2)
@@ -1209,8 +1389,9 @@ class CcpManager(QMainWindow):
             self.table_widget.show()
             for widget in widgets: 
                 widget.hide()
-        
+
         self.input_data_sub.show() if self.input_data_button.isChecked() else self.input_data_sub.hide()
+        self.notice_frame.hide()
 
     def rtk_table_hide_column(self):
         for col in [4, 5, 8, 12, 14, 15, 16, 18, 19]:
@@ -1222,7 +1403,6 @@ class CcpManager(QMainWindow):
                 self.column_hide.setToolTip('컬럼 숨기기')
 
     def auto_fill_number(self):
-
         if self.rtk_data_file is None:
             self.show_modal("error", parent=self.main_frame, title=" NOT Input RTK Data", description="RTK 데이터가 입력되지 않았습니다.")
             return
