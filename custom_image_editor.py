@@ -178,7 +178,7 @@ class ImageEditor(QMainWindow):
         self.toolbar.addAction(self.font_style_action)
 
         # 폰트 통합 변경      
-        self.text_style_action = QAction(QIcon('font-square-3.svg'),"텍스트 스타일", self)
+        self.text_style_action = QAction(QIcon(':resources/icons/font-square-3.svg'),"텍스트 스타일", self)
         self.text_style_action.triggered.connect(self.change_text_style)
         self.toolbar.addAction(self.text_style_action)
 
@@ -250,7 +250,7 @@ class ImageEditor(QMainWindow):
         self.toolbar2 = QToolBar("Apply Image Toolbar")
         self.toolbar2.setFixedHeight(30)
         self.addToolBar(Qt.TopToolBarArea, self.toolbar2)
-        self.image_apply_button = QAction(QIcon("apply.svg"), "이미지 적용", self.toolbar2)  #====================================================================
+        self.image_apply_button = QAction(QIcon(":resources/icons/apply.svg"), "이미지 적용", self.toolbar2)  #====================================================================
         self.image_apply_button.setShortcut(QKeySequence("Ctrl+Return"))
         self.image_apply_button.triggered.connect(self.on_request_update)
         self.toolbar2.addAction(self.image_apply_button)

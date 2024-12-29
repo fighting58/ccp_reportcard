@@ -28,7 +28,7 @@ class Ui_SplashScreen(object):
         SplashScreen.setMaximumSize(QSize(300, 300))
         self.centralwidget = QWidget(SplashScreen)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.centralwidget.setStyleSheet("#centralwidget {background-image: url(splash.png);}")
+        self.centralwidget.setStyleSheet("#centralwidget {background-image: url(':resources/images/splash.png');}")
         self.horizontalLayout = QHBoxLayout(self.centralwidget)
         self.horizontalLayout.setSpacing(0)
         self.horizontalLayout.setObjectName(u"horizontalLayout")

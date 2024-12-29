@@ -25,7 +25,7 @@ from rename_image_with_tr import DialogRenameImage
 from openpyxl import load_workbook
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.page import PageMargins, PrintPageSetup
-from openpyxl_addin import set_alignment, set_border, set_font, copyRange, pasteRange, copy_row_with_merge, format_date_to_korean, convert_decimal_to_roundup_angle
+from openpyxl_addin import set_alignment, set_border, set_font, copy_row_with_merge, format_date_to_korean, convert_decimal_to_roundup_angle
 from datetime import datetime, timedelta
 import random
 from QCustomModals import QCustomModals
@@ -477,7 +477,7 @@ class Splashscreen(QMainWindow):
         self.progress.setFixedSize(self.progress.width, self.progress.height)
 
         self.progress.add_shadow(True)
-        self.progress.bg_color = QColor(68,71, 90, 140)
+        self.progress.bg_color = QColor(68, 71, 90, 140)
 
         self.progress.setParent(self.ui.centralwidget)
         self.progress.show()
@@ -485,7 +485,7 @@ class Splashscreen(QMainWindow):
         self.shadow.setBlurRadius(15)
         self.shadow.setXOffset(0)
         self.shadow.setYOffset(0)
-        self.shadow.setColor(QColor(0,0,0,80))
+        self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
 
         self.timer = QTimer()
@@ -630,14 +630,8 @@ class CcpManager(QMainWindow):
 
         self.rtk_record_button = QPushButton(QIcon(':resources/icons/document-add.svg'), f'  {"관측기록부 등":^10}  ', side_container)
         self.rtk_record_button.setIconSize(QSize(24, 24))
-        # self.rtk_result_button = QPushButton(QIcon(':resources/icons/document-medicine.svg'), f'   {"관측 결과부":^8}   ', side_container)
-        # self.rtk_result_button.setIconSize(QSize(24,24))
-        # self.rtk_ilram_button = QPushButton(QIcon(':resources/icons/document.svg'), f'  {"기준점일람표":^8}  ', side_container)
-        # self.rtk_ilram_button.setIconSize(QSize(24,24))
 
         rtk_data_sub_layout.addWidget(self.rtk_record_button)
-        # rtk_data_sub_layout.addWidget(self.rtk_result_button)
-        # rtk_data_sub_layout.addWidget(self.rtk_ilram_button)
 
         rtk_hlayout = QHBoxLayout()
         rtk_hspacer = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -727,7 +721,7 @@ class CcpManager(QMainWindow):
         hlayout1 = QHBoxLayout()
         hspacer1 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.common_apply_button = QPushButton(QIcon(':resources/icons/cpu.svg'), '  적용', side_container)
-        self.common_apply_button.setIconSize(QSize(24,24))
+        self.common_apply_button.setIconSize(QSize(24, 24))
         hlayout1.addItem(hspacer1)
         hlayout1.addWidget(self.common_apply_button)
         common_input_sub_layout.addLayout(hlayout1)
@@ -754,7 +748,7 @@ class CcpManager(QMainWindow):
         image_management_sub_layout = QVBoxLayout()
 
         self.get_image_button = QPushButton(QIcon(':resources/icons/album.svg'), '  사진폴더 선택', side_container)
-        self.get_image_button.setIconSize(QSize(24,24))
+        self.get_image_button.setIconSize(QSize(24, 24))
         extension_group = QGroupBox(side_container)
         extension_group.setTitle('확장자')
         vlayout1 = QVBoxLayout()
@@ -771,7 +765,7 @@ class CcpManager(QMainWindow):
         hlayout2 = QHBoxLayout()
         hspacer2 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.image_apply_button = QPushButton(QIcon(':resources/icons/cpu.svg'), '  적용', side_container)
-        self.image_apply_button.setIconSize(QSize(24,24))
+        self.image_apply_button.setIconSize(QSize(24, 24))
         hlayout2.addItem(hspacer2)
         hlayout2.addWidget(self.image_apply_button)
         
@@ -1200,8 +1194,6 @@ class CcpManager(QMainWindow):
         self.rtk_sort_button.clicked.connect(self.rtk_sort)
         self.rtk_timecheck_button.clicked.connect(self.rtk_timecheck)
         self.rtk_record_button.clicked.connect(self.rtk_report_all)
-        # self.rtk_result_button.clicked.connect(self.rtk_result)
-        # self.rtk_ilram_button.clicked.connect(self.rtk_ilram)
         self.rtk_apply_button.clicked.connect(self.rtk_apply)
         self.load_project_button.clicked.connect(self.loadProject)
         self.tr_dat_button.clicked.connect(self.getDatFile)
@@ -1621,9 +1613,11 @@ class CcpManager(QMainWindow):
                 
                 for i in range(self.rtk_table_widget.rowCount()):
                     if shp_from == "landygo":
-                        location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "GKEY"]) 
+                        location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), 
+                                                                          float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "GKEY"]) 
                     else:
-                        location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "DOHO"])
+                        location = find_attributes_containing_point(gdf, (float(self.rtk_table_widget.item(i, 10).text()), 
+                                                                          float(self.rtk_table_widget.item(i, 9).text())), ["PNU", "DOHO"])
 
                     if location is not None:
                         pnu, dom = location.iloc[0, :]
