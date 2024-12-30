@@ -733,6 +733,34 @@ class CcpManager(QMainWindow):
         vlayout_common.setSpacing(5)
         side_layout_detail.addLayout(vlayout_common)
 
+        # 토지소재지 입력 ==================
+        vlayout_land = QVBoxLayout()
+        self.land_data_button = QPushButton(QIcon(':resources/icons/streets-map-point.svg'), f'  {"소재지 검색":^10}', side_container)
+        self.land_data_button.setIconSize(QSize(32, 32))
+        self.land_data_button.setObjectName("land_data_button")
+        self.land_data_button.setCheckable(True)
+        vlayout_land.addWidget(self.land_data_button)
+        self.button_group.addButton(self.land_data_button)
+        
+        # 토지소재지 입력 - 서브
+        land_data_sub = QWidget(side_container)
+        land_data_sub.setFixedHeight(100)
+        land_data_sub_layout = QVBoxLayout()
+        land_data_sub_layout.setSpacing(15)
+        self.cif_button = QPushButton(QIcon(':resources/icons/cif-file.svg'), '   Cif에서 검색', side_container)
+        self.cif_button.setIconSize(QSize(24, 24))        
+        self.shp_button = QPushButton(QIcon(':resources/icons/shape-file.svg'), '  Shp에서 검색', side_container)
+        self.shp_button.setIconSize(QSize(24, 24))
+        land_data_sub_layout.addWidget(self.cif_button)
+        land_data_sub_layout.addWidget(self.shp_button)
+        land_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        land_data_sub.setLayout(land_data_sub_layout)
+        
+        land_data_sub.setVisible(False)
+        vlayout_land.addWidget(land_data_sub)
+        vlayout_land.setSpacing(5)
+        side_layout_detail.addLayout(vlayout_land)
+
         # 사진관리 ================
         vlayout_image = QVBoxLayout()
         self.image_management_button = QPushButton(QIcon(':resources/icons/gallery-wide.svg'), f'  {"이미지 삽입":^10}', side_container)
@@ -779,34 +807,6 @@ class CcpManager(QMainWindow):
         vlayout_image.addWidget(image_management_sub)
         vlayout_image.setSpacing(5)
         side_layout_detail.addLayout(vlayout_image)
-
-        # 토지소재지 입력 ==================
-        vlayout_land = QVBoxLayout()
-        self.land_data_button = QPushButton(QIcon(':resources/icons/streets-map-point.svg'), f'  {"소재지 검색":^10}', side_container)
-        self.land_data_button.setIconSize(QSize(32, 32))
-        self.land_data_button.setObjectName("land_data_button")
-        self.land_data_button.setCheckable(True)
-        vlayout_land.addWidget(self.land_data_button)
-        self.button_group.addButton(self.land_data_button)
-        
-        # 토지소재지 입력 - 서브
-        land_data_sub = QWidget(side_container)
-        land_data_sub.setFixedHeight(100)
-        land_data_sub_layout = QVBoxLayout()
-        land_data_sub_layout.setSpacing(15)
-        self.cif_button = QPushButton(QIcon(':resources/icons/cif-file.svg'), '   Cif에서 검색', side_container)
-        self.cif_button.setIconSize(QSize(24, 24))        
-        self.shp_button = QPushButton(QIcon(':resources/icons/shape-file.svg'), '  Shp에서 검색', side_container)
-        self.shp_button.setIconSize(QSize(24, 24))
-        land_data_sub_layout.addWidget(self.cif_button)
-        land_data_sub_layout.addWidget(self.shp_button)
-        land_data_sub_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        land_data_sub.setLayout(land_data_sub_layout)
-        
-        land_data_sub.setVisible(False)
-        vlayout_land.addWidget(land_data_sub)
-        vlayout_land.setSpacing(5)
-        side_layout_detail.addLayout(vlayout_land)
 
         # 내보내기 ==================
         vlayout_export = QVBoxLayout()
