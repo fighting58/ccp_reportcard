@@ -1,0 +1,125 @@
+<html>
+
+<head>
+    <title>사용설명서</title>
+    <link rel="stylesheet" type="text/css" href="help/help.css">
+</head>
+
+<body>
+    <div class="title">
+        <h1>지적삼각보조(도근)점 성과표 작성 사용설명서</h1>                
+    </div>
+    <div class="content">
+        <ol>
+            <li>
+                <p class="subtitle-1"> 개 요</p>
+                <p>이 프로그램은 지적삼각보조(도근)점 성과표를 작성하기 위해 고안되었으며, 추가적으로 위성관측데이터로부터 관측기록부/결과부 등을 작성할 수 있도록 구성되었습니다.</p>  
+                <p>이 프로그램은 입력데이터에 따라 다음과 같은 기능을 제공하며 이 때 입력되는 모든 데이터는 DRM이 해제된 파일이어야 합니다.</p>
+                <ol>
+                    <li>위성관측데이터 입력</li>
+                    <ul>
+                        <li>관측기록부/결과부 작성</li>
+                        <li>일람표 작성</li>
+                        <li>tr.dat 생성</li>
+                        <li>지적삼각보조(도근)점 성과표 작성</li>
+                    </ul>
+                    <li>tr.dat 입력</li>
+                    <ul>
+                        <li>지적삼각보조(도근)점 성과표 작성</li>
+                    </ul>
+                </ol>
+            </li>
+            <li>
+                <p class="subtitle-1"> 화면 구성</p>
+                <p>이 프로그램은 다음과 같이 화면이 구성되어 있습니다.</p>        
+                <p class="image"><img src="./images/1-화면구성.png" alt="화면구성" style="width:50vw"/></p>   
+                <ol>
+                    <li><p class="'subtitle-2"> 사이드바 메뉴</p>
+                        <p>입력 단계별로 작성되었으며, 대부분 순차적으로 진행하면 됩니다.</p>
+                    </li>
+                    <li><p class="'subtitle-2"> 메인 화면</p>
+                        <p>데이터 편집 및 이미지 편집시 사용되는 공간입니다.</p>
+                    </li>
+                    <li><p class="'subtitle-2"> 메뉴</p>
+                        <p>표 편집모드/ 사진 편집 모드간 변경을 위한 버튼이 있습니다.</p>
+                    </li>
+                    <li><p class="'subtitle-2"> 사진 편집 모드</p>
+                        <p>진행 과정에 대한 메시지 및 정보를 보여줍니다.</p>
+                    </li>
+                </ol>
+            </li>
+            <li>
+                <p class="subtitle-1"> 기타 툴들</p>
+                <div class="subcontent"> 
+                    <ol>
+                        <li><h3> 기타 툴들</h3>
+                            <p class="image"><img src="./images/3_1-기타툴들.png" alt="화면구성"/></p>
+                            <ol>
+                                <li><p class="subtitle-2"> 법정동코드 업데이트</p>
+                                    <p>code.go.kr에서 법정동코드를 다운로드합니다.</p>
+                                    <p>성공적으로 다운로드되면 프로그램 설치 폴더에 "법정동코드 전체자료.txt"이라는 파일이 생성됩니다.</p>
+                                </li>
+                                <li><p class="subtitle-2"> 사진파일명 변경</p>
+                                    <p class="image"><img src="./images/3_1-사진파일변경.png" alt="사진파일명변경"/></p>
+                                    <p> tr.dat와 사진폴더를 입력하여 각 사진파일의 이름을 도근번호와 일치하도록 변경할 수 있습니다.</p>
+                                    <p> 다만, 이 기능은 사진파일명이 GPS위치정보를 포함하고 있어야 가능하며 사진파일의 GPS위치로부터 50m반경에 포함되는 도근번호로 수정됩니다.</p>
+                                    <p> 이 기능을 사용할 경우 도근점간 거리가 가까운 경우에는 사진파일명이 잘못된 상태로 변경될 수도 있으니 주의하시기 바랍니다.</p>
+                                </li>
+                                <li><p class="subtitle-2"> 관측자 설정</p>
+                                    <p class="image"><img src="./images/3_1-관측자설정.png" alt="관측자설정"/></p>    
+                                    <p>관측자 설정을 위해 사용하는 팀의 정보를 입력할 수 있습니다.</p>
+                                    <p>리스트상자에서 팀을 선택한 후 우클릭하면 관측자를 제거할 수도 있습니다.</p>
+                                </li>
+                            </ol>
+                            <p></p>
+
+                        </li>
+                    </ol>
+                </div> 
+            </li> 
+            <li>
+                <p class="subtitle-1"> RTK 기록부 외</p>
+                <div class="subcontent"> 
+                    <ol>
+                        <li><h3> 기타 툴들</h3>
+                            <p class="image"><img src="./images/3_2-rtk기록부외.png" alt="RTK기록부외"/></p>
+                            <ol>
+                                <li><p class="subtitle-2"> 관측데이터(xlsx)</p>
+                                    <p>모바일 랜디고를 통해 다운로드 받은 관측데이터 엑셀파일을 입력합니다.</p>
+                                </li>
+                                <li><p class="subtitle-2"> 번호-시작 정렬</p>                                    
+                                    <p> 도근번호와 관측시간을 기준으로 표를 정렬합니다.</p>
+                                </li>
+                                <li><p class="subtitle-2"> 타임 조정</p>                                    
+                                    <p>관측시간 간격(데이터 취득간격 60초 이상, 관측간격 60분 이상)을 조정합니다.</p>
+                                    <p>1회 관측시작시간을 기준으로 조정되며 2회 관측시간은 다른 기준점 관측시간과 중복될 수 있음을 숙지하시기 바랍니다.</p>
+                                </li>
+                                <li><p class="subtitle-2"> Cif/Shp 입력</p> 
+                                    <p>Cif 또는 Shp파일을 입력하여 해당 기준점이 위치한 소재지, 지번, 도호를 가져옵니다.</p>
+                                    <p>이 때, Cif는 복호화된 파일이어야 하며, Shp파일과 마찬가지로 DRM이 해제된 파일이어야 합니다.</p>
+                                    <p>Cif를 Shp로 변환하려면 LXGIS를 통해 생성하거나 랜디고에서 Shp로 내보내기 기능을 통해 변환할 수 있습니다.</p>
+                                </li>
+                                <li><p class="subtitle-2"> 관측자(성명)</p> 
+                                    <p>기타툴들-관측자 설정에 의해 저장된 팀을 선택할 수 있습니다.</p>
+                                    <p>자격, 직급, 안테나번호는 자동으로 입력되며 설정의 변경사항은 관측자 설정을 통해 변경하는 것을 추천합니다.</p>
+                                </li>
+                                <li><p class="subtitle-2"> 접수번호</p> 
+                                    <p>위성관측 표지에 입력되는 접수번호입니다.</p>                                    
+                                </li>
+                            </ol>
+                            <p></p>
+
+                        </li>
+                    </ol>
+                </div> 
+            </li> 
+
+    </div>
+
+
+
+</body>
+
+
+
+</html>

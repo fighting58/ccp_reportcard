@@ -609,7 +609,7 @@ class CcpManager(QMainWindow):
         self.antena_sn = QLineEdit(side_container)  # 안테나 명(번호)        
 
         self.reception_number.setPlaceholderText("접수번호")
-        self.ref_jibun.setPlaceholderText("대표 지번")
+        self.ref_jibun.setPlaceholderText("대표 지번(용인시 처인구...)")
         self.jigu_name.setPlaceholderText("지구명")
         self.jigu_attr.setPlaceholderText("지구특성")
         self.antena_sn.setPlaceholderText("안테나 명(번호)")
