@@ -2,25 +2,51 @@ html {
     font-size: 62.5%; 
 }
 body {
-    font-size: 1.2rem
+    font-size: 1.2rem;
+    line-height: 1.6; /* Improved readability */
 }
 .image {    
     display: block;
-    width: 100rem;
+    width: 100%;
     text-align: center;
+    margin: 0 auto; /* Center the image */
+}
+.subtitle-1, .subtitle-2 {
+    font-weight: 700;
 }
 .subtitle-1 {
     font-size: 1.8rem;
-    font-weight: 700;
 }
 .subtitle-2 {
     font-size: 1.6rem;
-    font-weight: 700;
 }
 .subtitle-3 {
     font-size: 1.4rem;
-    font-weight: 700;
 }
 ol > li, ul > li {
-    margin: 1rem;
+    margin: 1rem 0;
+}
+.explanation {
+    margin-left: 2rem;
+}
+.explanation1 {
+    margin-left: 2rem;
+    font-size: 1.4rem;
+}
+
+.content-1, .content-2, .content-3, .content-4, .content-5 {
+    margin-left: 2rem;
+}
+.content-1 {
+    margin-top: 4rem;
+}
+
+.container {
+    width: 100rem;
+    margin: 0 auto; /* Center the container */
+}
+
+.highlight {
+    font-weight: 700;
+    border-bottom: 1px solid #000; /* Underline effect
 }

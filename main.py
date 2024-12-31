@@ -664,9 +664,9 @@ class CcpManager(QMainWindow):
         self.input_data_sub.setFixedHeight(100)
         input_data_sub_layout = QVBoxLayout()
         input_data_sub_layout.setSpacing(15)
-        self.tr_dat_button = QPushButton(QIcon(':resources/icons/target.svg'), f'    {"tr.dat 입력":^14}     ', side_container)        
+        self.tr_dat_button = QPushButton(QIcon(':resources/icons/target.svg'), f'    {"tr.dat 입력":^10}     ', side_container)        
         self.tr_dat_button.setIconSize(QSize(24, 24))
-        self.load_project_button = QPushButton(QIcon(':resources/icons/file-right.svg'), f' {"기존 프로젝트":^14}  ', side_container)
+        self.load_project_button = QPushButton(QIcon(':resources/icons/file-right.svg'), f' {"기존 프로젝트":^10}  ', side_container)
         self.load_project_button.setIconSize(QSize(24, 24))
         input_data_sub_layout.addWidget(self.tr_dat_button)
         input_data_sub_layout.addWidget(self.load_project_button)
@@ -707,8 +707,9 @@ class CcpManager(QMainWindow):
         self.surveyor_position_input.setPlaceholderText('조사자(직)')
         self.surveyor_input.setPlaceholderText('조사자')
         self.findings_input.setPlaceholderText('조사내용')
+        self.findings_input.setText("신설")
         self.origin_input.setPlaceholderText('원점')
-        self.origin_input.setText('세계중부')
+        self.origin_input.setText('세계측지계(중부)')
 
         common_input_sub_layout.addWidget(self.grade_input)
         common_input_sub_layout.addWidget(self.name_input)
@@ -924,7 +925,7 @@ class CcpManager(QMainWindow):
         self.table_to_tr = QPushButton(icon=QIcon(':resources/icons/point_black.png'), parent=self)
         self.table_to_tr.setIconSize(QSize(24, 24))
         self.table_to_tr.setObjectName("table_to_tr")
-        self.table_to_tr.setToolTip("tr.data 저장")
+        self.table_to_tr.setToolTip("tr.dat 저장")
         self.table_to_tr.setFixedWidth(30)
         self.save_table = QPushButton(icon=QIcon(':resources/icons/diskette.svg'), parent=self)
         self.save_table.setIconSize(QSize(24, 24))
@@ -1364,7 +1365,13 @@ class CcpManager(QMainWindow):
         help_file_path = os.path.join(script_dir, "help", "help.html")  # 절대 경로로 변환
         try:
             # 1. Chrome 브라우저에서 열기 시도
-            chrome_path = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"  # Chrome 실행 파일 경로
+            chrome_paths = [r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe", 
+                           r"C:\Program Files\Google\Chrome\Application\chrome.exe"]  # Chrome 실행 파일 경로
+            chrome_path = None
+            for _path in chrome_paths:
+                if os.path.exists(_path):
+                    chrome_path = _path
+                    break
             webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
             webbrowser.get('chrome').open(help_file_path)
         except Exception as chrome_error:
@@ -1984,6 +1991,10 @@ class CcpManager(QMainWindow):
 
     def rtk_apply(self):
         # 공통값 입력 
+        if self.rtk_data_file is None:
+            self.show_modal("error", parent=self.main_frame, title=" Error", description="먼저 RTK 데이터 파일을 입력해주세요.")
+            return
+        
         self.install_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().strip().split(' ')[0])
         self.survey_date_input.setText(self.rtk_table_widget.item(self.rtk_table_widget.rowCount()-1, 1).text().strip().split(' ')[0])
         self.surveyor_position_input.setText(self.surveyor_grade.currentText())
