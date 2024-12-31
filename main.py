@@ -32,6 +32,7 @@ from QCustomModals import QCustomModals
 from settings import Settings
 from environment_manage import EnvironmentManager
 from ui_splash_screen import Ui_SplashScreen
+import webbrowser
 
 
 # global value
@@ -1330,10 +1331,6 @@ class CcpManager(QMainWindow):
         self.toolbar.setWindowTitle('MainToolbar')
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         
-        # # 툴바 아이콘 추가
-        # new_action = QAction(QIcon(':/icons/document-add-svgrepo-com.svg'), '새 문서', self)
-        # # new_action.triggered.connect(self.new_document)
-        # self.toolbar.addAction(new_action)
 
         # open_action = QAction(QIcon(':/icons/album-svgrepo-com.svg'), '열기', self)
         # # open_action.triggered.connect(self.open_image)
@@ -1344,7 +1341,13 @@ class CcpManager(QMainWindow):
         # self.toolbar.addAction(save_action)
 
         self.change_mode_toggle = CustomToggleButton()
+
+        # 사용 설명서
+        help_action = QAction(QIcon(':resources/icons/book-2.svg'), '사용설명서', self)
+        help_action.triggered.connect(self.on_help)
+
         self.toolbar.addWidget(self.change_mode_toggle)
+        self.toolbar.addAction(help_action)
 
     def add_dockableWidget(self, title:str, wdg:QWidget):
         dock = QDockWidget(title, self)
@@ -1354,6 +1357,28 @@ class CcpManager(QMainWindow):
         dock.setWidget(wdg)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)    
         return dock
+    
+    def on_help(self):
+        # Help 파일 경로
+        script_dir = os.path.dirname(os.path.abspath(__file__))  # 현재 스크립트 디렉토리
+        help_file_path = os.path.join(script_dir, "help", "help.html")  # 절대 경로로 변환
+        try:
+            # 1. Chrome 브라우저에서 열기 시도
+            chrome_path = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"  # Chrome 실행 파일 경로
+            webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
+            webbrowser.get('chrome').open(help_file_path)
+        except Exception as chrome_error:
+            print(f"Failed to open in Chrome: {chrome_error}")
+
+            try:
+                # 2. 기본 브라우저에서 열기 시도
+                webbrowser.open(help_file_path)
+                print("Opened in default browser")
+            except Exception as default_error:
+                print(f"Failed to open in default browser: {default_error}")
+                print("Error opening help file.")
+                self.show_modal("error", parent=self.main_frame, title=" Cannot Open Help", description=f"파일 열기 중 오류 발생:\n{e}")
+
     
     def show_modal(self, modal_type, **kargs):
         """ 메시지 송출 """
