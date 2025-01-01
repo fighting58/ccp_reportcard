@@ -1386,7 +1386,6 @@ class CcpManager(QMainWindow):
                 print("Error opening help file.")
                 self.show_modal("error", parent=self.main_frame, title=" Cannot Open Help", description=f"파일 열기 중 오류 발생:\n{e}")
 
-    
     def show_modal(self, modal_type, **kargs):
         """ 메시지 송출 """
         default_settings = {'position': 'bottom-right', 'duration': 2000, 'closeIcon': ':resources/icons/x.svg'}
