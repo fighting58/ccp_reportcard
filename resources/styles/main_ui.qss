@@ -1,0 +1,97 @@
+/* 전체 스타일 지정 */
+    QWidget {
+        color: white;
+        }
+    QMainWindow {
+        background-image: url(':resources/images/background3.png'); 
+        background-color: #aaa;
+        }
+    QScrollArea {
+        border: none;
+        background-color: transparent;
+        }    
+    QScrollArea QWidget {
+        background-color: transparent;
+        }
+    QScrollArea QLineEdit {
+        color: black;
+        background-color: white;
+        }
+    QStatusBar QLabel {
+        color: white;
+        }
+    #rtk_table_widget, #table_widget {
+        border: none;
+        gridline-color: white;
+        outline: 0;
+        background-color: transparent;
+        }
+    #rtk_table_widget::item, #table_widget::item {
+        margin: 2px;
+        }
+    #rtk_table_widget QLineEdit, #table_widget QLineEdit{
+        background-color: #1a1b1c;
+        color: white;
+        }
+    #rtk_table_widget QHeaderView::section, #table_widget QHeaderView::section { 
+        color: black;
+        background-color: darkgray; 
+        border: 1px solid white; 
+        text-align: center; 
+        font-weight: bold;
+        }        
+    QToolBar, #temp_label, #temp_label1, #band {
+        background-color: #F0F0F0;
+        }
+    QToolBar *, QMenu::item {
+        color: black;        
+        }
+    QDockWidget QLineEdit {
+        color: black;
+        }
+    #survey_license, #ccp_type, #surveyor_name, #surveyor_grade {
+        color: black;
+        background-color: white;
+    }
+    #survey_license QAbstractItemView, #ccp_type QAbstractItemView,#surveyor_name QAbstractItemView, #surveyor_grade QAbstractItemView {
+        color: black;
+    }
+    QDockWidget QPushButton {
+        padding: 3px 10px 3px 10px;
+        border: none;
+        border-radius: 10px;
+        color: #EAF6FF;
+        font-weight: bold;
+        background-color: #155815;
+        }
+    QDockWidget QPushButton::hover {
+        color:#155815;
+        background-color: #EEFFA0;
+        }
+    #image_editor #image_label {
+        background-color: white;
+        }
+    #image_editor QToolBar {
+        spacing: 5px;
+        }
+    #input_rtkdata_button, #input_data_button, #common_input_button, #image_management_button, #land_data_button, #export_button, #extra_tools {
+        color: #1E4171;
+        font-size: 14px;
+        font-weight: 900;
+        padding: 5px; 
+        border-radius: 5px;
+        background-color: #EEF7FF;
+        } 
+    #input_rtkdata_button::hover, #input_data_button::hover, #common_input_button::hover, #image_management_button::hover, #land_data_button::hover, #export_button::hover, #extra_tools::hover {
+        color: #EAF6FF;
+        background-color: #0983C8;
+        } 
+    #input_rtkdata_button::checked, #input_data_button::checked, #common_input_button::checked, #image_management_button::checked, #land_data_button::checked, #export_button::checked, #extra_tools::checked {
+        border: none;
+        color: #EEF7FF;
+        background-color: #1E4171;
+        }
+    QInputDialog > QLabel, QLineEdit, QPushButton, QSpinBox {
+        color:black;
+        }
+

@@ -1,0 +1,29 @@
+QWidget { 
+    color: white;
+    background-color: transparent;
+    }
+
+#dialogrenameimage, #settings { 
+    background-image: url(':resources/images/background2.png');
+    padding: 3px;
+    border: 3px solid white;
+    }
+QPushButton {
+    padding: 5px 10px 5px 10px;
+    border-radius: 10px;
+    color: #5F84A2;
+    background-color: #F0F0F0;
+    }
+QPushButton::hover {
+    background-color: #5F84A2;
+    color: white;
+    }
+#statusbar {
+    background-color: gray;    
+    border-bottom: 3px solid white;
+    border-left: 3px solid white;
+    border-right: 3px solid white;
+    }
+#statusbar > QLabel {
+    margin-right: 10px;
+    }

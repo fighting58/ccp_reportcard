@@ -1,6 +1,6 @@
 _*
 __pycache__
-/resources
 /build
 /dist
 *.spec
+__api_key.py  
