@@ -33,6 +33,7 @@ from settings import Settings
 from environment_manage import EnvironmentManager
 from ui_splash_screen import Ui_SplashScreen
 import webbrowser
+from vworldmap_dialog import VWorldMapViewer
 
 
 # global value
@@ -509,7 +510,7 @@ class CcpManager(QMainWindow):
 
     HEADER_LABELS = ['점번호', 'X', 'Y', '도선등급', '도선명', '표지재질', '토지소재(동리)', 
                       '토지소재(지번)', '지적(임야)도', '설치년월일', '조사년월일', '조사자(직)', 
-                      '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고', '사진파일(경로)', '사진파일명']
+                      '조사자(성명)', '조사내용', '경위도(B)', '경위도(L)', '원점', '표고', '사진파일(경로)', '사진파일명', '위성사진']
     RTK_HEADERS = ['번호', '시작', '종료', '에포크', '수평', '수직', '위도', '경도', '타원체고', 'X', 'Y', 'Z', '지오이드고',
                    'PDOP', 'HDOP', 'VDOP', '장비', '위성수', '솔루션', '사진', '재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도']
     TEMPLATE = ':resources/templates/template.xlsx'
@@ -1232,7 +1233,22 @@ class CcpManager(QMainWindow):
     def on_table_update_request(self, row, path, filename):
         self.table_widget.setCellItemAligned(row, self._headerindex("사진파일(경로)"), path)
         self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), filename)
+
+        ##############################################################
+        # 위성사진 생성
+        num = self.table_widget.item(row, 0).text()
+        x = self.table_widget.item(row, 2).text()
+        y = self.table_widget.item(row, 1).text()
+        vworld_dlg = VWorldMapViewer(float(x), float(y), name=num, path=path, apply_transform=True, row=row, parent=self)
+        vworld_dlg.save_sat_image_request.connect(self.on_save_sat_image)
+        vworld_dlg.exec()
+        ##############################################################
+
         self.show_modal("success", parent=self.main_frame, title=" Successfully Apllied", description=f"성공적으로 적용/저장되었습니다.\n{filename}")
+
+    @Slot(int, str)
+    def on_save_sat_image(self, row, filename):
+        self.table_widget.setCellItemAligned(row, self._headerindex("위성사진"), filename)
 
     @property
     def image_folder(self): 
@@ -1384,7 +1400,7 @@ class CcpManager(QMainWindow):
             except Exception as default_error:
                 print(f"Failed to open in default browser: {default_error}")
                 print("Error opening help file.")
-                self.show_modal("error", parent=self.main_frame, title=" Cannot Open Help", description=f"파일 열기 중 오류 발생:\n{e}")
+                self.show_modal("error", parent=self.main_frame, title=" Cannot Open Help", description=f"파일 열기 중 오류 발생:\n{default_error}")
 
     def show_modal(self, modal_type, **kargs):
         """ 메시지 송출 """
@@ -2193,7 +2209,6 @@ class CcpManager(QMainWindow):
                 self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), ''.join([num, '_edit',self.image_extension]))
             else:
                 self.table_widget.setCellItemAligned(row, self._headerindex("사진파일명"), ''.join([num, self.image_extension]))
-
         self.status_message.setText("사진정보를 갱신하였습니다.")
 
     def setLocation(self, kind_of_db):

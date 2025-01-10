@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtGui import QScreen
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, Signal
 import sys
+import os
 from __api_key import VWorldApiKey
 from pyproj import Transformer
 
@@ -39,18 +40,6 @@ class VWorldPintMapHtmlCreator:
             }; 
                 
             vmap = new vw.ol3.Map("vmap",  vw.ol3.MapOptions); 
-            
-            vmap.on('pointermove', function(evt) {
-                var feature = vmap.forEachFeatureAtPixel(evt.pixel, function(feature,layer) {
-                    if (layer != null && layer.className == 'vw.ol3.layer.Marker') {
-                    $('#param').val('');
-                    $('#param').val(feature.get('id'));
-                    selectMarker = feature;
-                    } else {
-                    return false;
-                    }
-                });
-            });
             
             var markerLayer;
             function addMarkerLayer() {
@@ -98,7 +87,7 @@ class VWorldPintMapHtmlCreator:
             function fnMoveZoom() {
                 zoom = vmap.getView().getZoom();
                 if (16 > zoom) {
-                    vmap.getView().setZoom(20);
+                    vmap.getView().setZoom(18.5);    <!-- 7 <= zoom <= 19 -->
                 }                
             }
                 
@@ -116,14 +105,23 @@ class VWorldPintMapHtmlCreator:
         return self._html_template.replace("%%VWORLD_API_KEY%%", self.api_key).replace("%%X%%", self.x).replace("%%Y%%", self.y).replace("%%NAME%%", self.name)
 
 
-class vworldMapViewer(QDialog):
-    def __init__(self, x, y, point_name, parent=None):
+class VWorldMapViewer(QDialog):
+    save_sat_image_request = Signal(int, str)
+
+    def __init__(self, x, y, parent=None, **kargs):
         super().__init__(parent)
         self.x = x
         self.y = y
-        self.name = point_name
+        self.name = kargs.get("name", "POINT")
+        self.path = kargs.get("path", '.')
+        self.row = kargs.get("row", None)
+        self.parent = parent
+        self.apply_transform = kargs.get("apply_transform", False)
+        if self.apply_transform:
+            self.x, self.y = self.transform(reverse=True) # 세계좌표를 경위도 좌표로 변환
+
         self.setWindowTitle("vworldMapViewer")
-        self.resize(840, 720)
+        self.resize(420, 410)
         self.setup_ui()
 
     def setup_ui(self):
@@ -136,11 +134,9 @@ class vworldMapViewer(QDialog):
         self.capture_button.clicked.connect(self.capture_screen)
         layout.addWidget(self.capture_button)
         layout.setContentsMargins(0, 0, 0, 0)
-
-        print(VWorldPintMapHtmlCreator(str(self.x), str(self.y), name=self.name).html)
         self.web_view.setHtml(VWorldPintMapHtmlCreator(str(self.x), str(self.y), name=self.name).html)
 
-    def transform(self, x, y, **kargs):
+    def transform(self, **kargs):
         """좌표 변환
         좌표 변환을 위해 pyproj.Transformer 클래스를 사용하며 기본적으로 경위도좌표를 세계측지계(중부)로 변환한다.
 
@@ -157,22 +153,29 @@ class vworldMapViewer(QDialog):
         """
         from_epsg = kargs.get("from_espg", "EPSG:4326")
         to_epsg = kargs.get("to_espg", "EPSG:5186")
-        reverse = kargs.get("revese", False)
+        reverse = kargs.get("reverse", False)
 
         if reverse:
             from_epsg, to_epsg = to_epsg, from_epsg
 
         transformer = Transformer.from_crs(from_epsg, to_epsg, always_xy=True)
 
-        return transformer.transform(x, y)
+        return transformer.transform(self.x, self.y)
 
     def capture_screen(self):
-        screen = QScreen.grabWindow(self.windowHandle().screen(), self.winId(), 20, 20, 800, 600)
-        screen.save("123.png", "png")
+        screen = QScreen.grabWindow(self.windowHandle().screen(), self.winId(), 10, 10, 400, 300)
+        filename = f"{self.name}_위성.png"
+        save_path = os.path.join(self.path, filename)
+        screen.save(save_path, "png")
+        if self.row is not None:
+            if self.parent is not None:
+                print(self.parent)
+                self.parent.show_modal("success", parent=self.web_view, title=" Saving Success", description=f"위성사진이 성공적으로 저장되었습니다.\n{filename}")
+            self.save_sat_image_request.emit(self.row, filename)
 
 
 if __name__ == "__main__":  
     app = QApplication(sys.argv)
         
-    view = vworldMapViewer(127.23795321951091, 37.23529265431432, "10230")
+    view = VWorldMapViewer(221115.187, 515152.230, name="10230", apply_transform=True)
     view.exec()
