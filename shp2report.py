@@ -1,6 +1,7 @@
 import openpyxl_addin as oa
 import openpyxl
 import pandas as pd
+from copy import copy
 
 
 class ReportFromDataframe():
@@ -64,14 +65,15 @@ class ReportFromDataframe():
         """
 
         for datamap in self._mappings:
+
             ranges = datamap.get('address')
             fields = datamap.get('fields')
             callback = datamap.get('callback')
             kargs = datamap.get('kargs')
 
-            rng = oa.cell_shift(ranges)
+            rng = ranges
 
-            for i in range(self._repeats): 
+            for i in range(self._repeats):             
                 if callback is None:
                     # 단순 데이터 기록
                     oa.set_data(sheet, rng, self.dataframe.loc[i, fields])
@@ -83,6 +85,7 @@ class ReportFromDataframe():
                     else:
                         callback(sheet=sheet, rng=rng, index=i, dataframe=self.dataframe, fields=fields, **kargs)
                 rng = oa.cell_shift(rng, row_shift=self.max_row)
+
 
     def report(self) -> None:
         """

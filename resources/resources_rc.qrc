@@ -49,6 +49,7 @@
     <file>icons/xlsx-file.svg</file>
     <file>templates/RTK_TEMPLATE.xlsx</file>
     <file>templates/template.xlsx</file>
+    <file>templates/template2.xlsx</file>
     <file>styles/main_ui.qss</file>
     <file>styles\dialogrenameimage.qss</file>
   </qresource>

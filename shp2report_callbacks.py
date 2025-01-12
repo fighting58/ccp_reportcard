@@ -21,9 +21,12 @@ def str_deco(**kargs):
     prefix = kargs.get('prefix', '')
     postfix = kargs.get('postfix', '')
     field = kargs.get('fields')
+    allow_empty = kargs.get('allow_empty', True)
     df = kargs.get('dataframe')
     idx = kargs.get('index')
     val = ''.join([prefix, df.loc[idx, field], postfix])
+    if not allow_empty and len(val) == 0:
+        return
     oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=val)
 
 def osa(**kargs):
@@ -95,6 +98,6 @@ def toBL(**kargs):
             s= f'{s[:7].ljust(7, "0")}'
 
         d=f'{d.rjust(4)}'
-        data = "  ".join([d, m , s])
+        data = "  ".join([d, m, s])
         oa.set_data(sheet=kargs.get('sheet'), rng=kargs.get('rng'), data=data)
 

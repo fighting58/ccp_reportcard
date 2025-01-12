@@ -18,18 +18,17 @@ class VWorldPintMapHtmlCreator:
             <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
             <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-            <title>Marker</title>
-            <!-- API key를 포함하여 브이월드 API URL을 지정하여 호출끝  -->
-            <script type="text/javascript" src="https://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=%%VWORLD_API_KEY%%"></script>
+            <title>Marker</title>  
+            <!-- API key를 포함하여 브이월드 API URL을 지정하여 호출끝 --> 
+            <script type="text/javascript" src="https://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=%%VWORLD_API_KEY%%"></script> 
             </head>
 
             <body>
-            <div id="vmap" style="width:100%;height:100%;left:0px;top:0px"></div>
-          
+            <div id="vmap" style="width:100%;height:100%;left:0px;top:0px"></div>          
+            
             <script type="text/javascript">
             var vmap;
-            var selectMarker;
-            
+              
             vw.ol3.MapOptions = {
                 basemapType: vw.ol3.BasemapType.PHOTO
                 , controlDensity: vw.ol3.DensityType.EMPTY
@@ -100,6 +99,7 @@ class VWorldPintMapHtmlCreator:
             </body>
             </html>
             """
+        
     @property
     def html(self): 
         return self._html_template.replace("%%VWORLD_API_KEY%%", self.api_key).replace("%%X%%", self.x).replace("%%Y%%", self.y).replace("%%NAME%%", self.name)

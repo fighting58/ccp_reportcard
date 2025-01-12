@@ -514,6 +514,7 @@ class CcpManager(QMainWindow):
     RTK_HEADERS = ['번호', '시작', '종료', '에포크', '수평', '수직', '위도', '경도', '타원체고', 'X', 'Y', 'Z', '지오이드고',
                    'PDOP', 'HDOP', 'VDOP', '장비', '위성수', '솔루션', '사진', '재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도']
     TEMPLATE = ':resources/templates/template.xlsx'
+    TEMPLATE2 = ':resources/templates/template2.xlsx'
     RTK_TEMPLATE = ':resources/templates/RTK_TEMPLATE.xlsx'
     
 
@@ -1576,6 +1577,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_data.xlsx')
         wb.save(savas_filename)
+        wb.close()
         self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"RTK_data가 성공적으로 생성되었습니다.\n{savas_filename}")
         self.status_message.setText(f"Save RTK_data_table to '{savas_filename}' successfully.")
     
@@ -1702,9 +1704,9 @@ class CcpManager(QMainWindow):
             copy_success = self.copy_resource_to_file(template_path, record_file)
             if not copy_success:
                 self.status_message.setText("[표지] 파일 복사에 실패했습니다.")
-                raise FileExistsError("파일 복사에 실패했습니다.")
+                raise FileExistsError("[표지] 파일 복사에 실패했습니다.")
         except FileExistsError:
-            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[표지]파일 복사에 실패했습니다.")
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[표지] 파일 복사에 실패했습니다.")
             return
             
         new_wb = load_workbook(record_file)
@@ -1749,6 +1751,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_표지.xlsx')
         new_wb.save(savas_filename)
+        new_wb.close()
         self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[표지]를 성공적으로 저장하였습니다.\n{savas_filename}")
         self.status_message.setText(f"Save to '{savas_filename}' successfully.")
 
@@ -1763,9 +1766,9 @@ class CcpManager(QMainWindow):
             copy_success = self.copy_resource_to_file(template_path, record_file)
             if not copy_success:
                 self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
-                raise FileExistsError("파일 복사에 실패했습니다.")
+                raise FileExistsError("[관측기록부] 파일 복사에 실패했습니다.")
         except FileExistsError:
-            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측기록부]파일 복사에 실패했습니다.")
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측기록부] 파일 복사에 실패했습니다.")
             return
             
         new_wb = load_workbook(record_file)
@@ -1843,6 +1846,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측기록부.xlsx')
         new_wb.save(savas_filename)
+        new_wb.close()
         self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[관측기록부]가 성공적으로 저장되었습니다.\n{savas_filename}")
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
@@ -1856,11 +1860,11 @@ class CcpManager(QMainWindow):
             # Load the template workbook
             copy_success = self.copy_resource_to_file(template_path, record_file)
             if not copy_success:
-                self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
-                raise FileExistsError("파일 복사에 실패했습니다.")
+                self.status_message.setText("[관측결과부] 파일 복사에 실패했습니다.")
+                raise FileExistsError("[관측결과부] 파일 복사에 실패했습니다.")
             
         except FileExistsError:
-            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측기록부]파일 복사에 실패했습니다.")
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측결과부] 파일 복사에 실패했습니다.")
             return  
         
         new_wb = load_workbook(record_file)
@@ -1923,6 +1927,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측결과부.xlsx')
         new_wb.save(savas_filename)
+        new_wb.close()
         self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[관측결과부]가 성공적으로 저장되었습니다.\n{savas_filename}")
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
 
@@ -1936,10 +1941,10 @@ class CcpManager(QMainWindow):
             # Load the template workbook
             copy_success = self.copy_resource_to_file(template_path, record_file)
             if not copy_success:
-                self.status_message.setText("[관측기록부] 파일 복사에 실패했습니다.")
-                raise FileExistsError("파일 복사에 실패했습니다.")
+                self.status_message.setText("[기준점일람표] 파일 복사에 실패했습니다.")
+                raise FileExistsError("[기준점일람표] 파일 복사에 실패했습니다.")
         except FileExistsError:
-            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[관측기록부]파일 복사에 실패했습니다.")
+            self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[기준점일람표] 파일 복사에 실패했습니다.")
             return
         
         new_wb = load_workbook(record_file)
@@ -1995,6 +2000,7 @@ class CcpManager(QMainWindow):
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_기준점일람표.xlsx')
         new_wb.save(savas_filename)
+        new_wb.close()
         self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[기준점일람표]가 성공적으로 저장되었습니다.\n{savas_filename}")
         self.status_message.setText(f"'{sheet_name}' sheet copied to '{savas_filename}' successfully.")
     
@@ -2285,57 +2291,100 @@ class CcpManager(QMainWindow):
             table_df = self.tablewidget_to_dataframe(self.table_widget)
             table_df.fillna("", inplace=True)
             # 서식에 대한 스타일 적용
-            border_settings =[{"rng": "A3:AF25","edges": ["all"], "border_style": "hair", "reset": True },  
-                            {"rng": "A3:AF25","edges": ["outer"], "border_style": "thin",  "reset": False },
-                            {"rng": "A3:A4","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
+            # # 구 성과표
+            # border_settings =[{"rng": "A3:AF25","edges": ["all"], "border_style": "hair", "reset": True },  
+            #                 {"rng": "A3:AF25","edges": ["outer"], "border_style": "thin",  "reset": False },
+            #                 {"rng": "A3:A4","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
+            #                 {"rng": "A6:A7","edges": ["inner_horizontal"], "border_style": None, "reset": False }, 
+            #                 {"rng": "A16:AF19","edges": ["inner_vertical"], "border_style": None, "reset": False },
+            #                 {"rng": "A16:AF19","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+            #                 {"rng": "B8:AF9","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+            #                 {"rng": "B10:AF11","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+            #                 {"rng": "B12:AF13","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+            #                 {"rng": "N14:AF15","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+            #                 {"rng": "N3:S4","edges": ["inner_vertical"], "border_style": None, "reset": False }
+            # ]
+            # # 값 입력
+            # mappings = [ {'fields': '점번호', 'address': 'B3', "callback":str_deco, 'kargs':{"postfix":"번"}},
+            #             {'fields': '도선등급', 'address': 'G3', "callback":str_deco, 'kargs':{"postfix":"등"}},
+            #             {'fields': '도선명', 'address': 'N3'},
+            #             {'fields': '표지재질', 'address': 'Z3'},
+            #             {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' ', 'postfix': "번지"}},  
+            #             {'fields': '지적(임야)도', 'address': 'Z5', "callback":str_deco, 'kargs':{"postfix":"호"}},
+            #             {'fields': '설치년월일', 'address': 'A8', 'callback': hangul_date},
+            #             {'fields': 'X', 'address': 'B9', 'callback':osa},
+            #             {'fields': 'Y', 'address': 'F9', 'callback':osa},
+            #             {'fields': '경위도(B)', 'address': 'M9', 'callback':toBL},
+            #             {'fields': '경위도(L)', 'address': 'W9', 'callback':toBL},
+            #             {'fields': '원점', 'address': 'B14'},
+            #             {'fields': '표고', 'address': 'N15'},
+            #             {'fields': '조사년월일', 'address': 'A22', 'callback': hangul_date},
+            #             {'fields': '조사자(직)', 'address': 'B22'},
+            #             {'fields': '조사자(성명)', 'address': 'F22'},
+            #             {'fields': '조사내용', 'address': 'L22'},
+            #             {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF19", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
+            # ]  
+
+            # 신 성과표
+            border_settings =[{"rng": "A6:L37","edges": ["all"], "border_style": "hair", "reset": True },  
+                            {"rng": "A6:L37","edges": ["outer"], "border_style": "thin",  "reset": False },
                             {"rng": "A6:A7","edges": ["inner_horizontal"], "border_style": None, "reset": False }, 
-                            {"rng": "A16:AF19","edges": ["inner_vertical"], "border_style": None, "reset": False },
-                            {"rng": "A16:AF19","edges": ["inner_horizontal"], "border_style": None, "reset": False },
-                            {"rng": "B8:AF9","edges": ["inner_horizontal"], "border_style": None, "reset": False },
-                            {"rng": "B10:AF11","edges": ["inner_horizontal"], "border_style": None, "reset": False },
-                            {"rng": "B12:AF13","edges": ["inner_horizontal"], "border_style": None, "reset": False },
-                            {"rng": "N14:AF15","edges": ["inner_horizontal"], "border_style": None, "reset": False },
-                            {"rng": "N3:S4","edges": ["inner_vertical"], "border_style": None, "reset": False }
+                            {"rng": "A10:A11","edges": ["inner_horizontal"], "border_style": None,  "reset": False },
+                            {"rng": "I12:L13","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "I14:L15","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "I16:L17","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "A22:G30","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "A22:G30","edges": ["inner_vertical"], "border_style": None, "reset": False },
+                            {"rng": "H22:L30","edges": ["inner_horizontal"], "border_style": None, "reset": False },
+                            {"rng": "H22:L30","edges": ["inner_vertical"], "border_style": None, "reset": False },
+                            {"rng": "H31:L33","edges": ["inner_horizontal"], "border_style": None, "reset": False }
             ]
             # 값 입력
-            mappings = [ {'fields': '점번호', 'address': 'B3', "callback":str_deco, 'kargs':{"postfix":"번"}},
-                        {'fields': '도선등급', 'address': 'G3', "callback":str_deco, 'kargs':{"postfix":"등"}},
-                        {'fields': '도선명', 'address': 'N3'},
-                        {'fields': '표지재질', 'address': 'Z3'},
-                        {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B5', 'callback': str_add, 'kargs':{'delim': ' ', 'postfix': "번지"}},  
-                        {'fields': '지적(임야)도', 'address': 'Z5', "callback":str_deco, 'kargs':{"postfix":"호"}},
-                        {'fields': '설치년월일', 'address': 'A8', 'callback': hangul_date},
-                        {'fields': 'X', 'address': 'B9', 'callback':osa},
-                        {'fields': 'Y', 'address': 'F9', 'callback':osa},
-                        {'fields': '경위도(B)', 'address': 'M9', 'callback':toBL},
-                        {'fields': '경위도(L)', 'address': 'W9', 'callback':toBL},
-                        {'fields': '원점', 'address': 'B14'},
-                        {'fields': '표고', 'address': 'N15'},
-                        {'fields': '조사년월일', 'address': 'A22', 'callback': hangul_date},
-                        {'fields': '조사자(직)', 'address': 'B22'},
-                        {'fields': '조사자(성명)', 'address': 'F22'},
-                        {'fields': '조사내용', 'address': 'L22'},
-                        {'fields': ['사진파일(경로)', '사진파일명'], 'address': "A17:AF19", 'callback': insert_image, 'kargs':{'keep_ratio': True}}
-            ]  
+            mappings = [ {'fields': '점번호', 'address': 'D6', "callback":str_deco, 'kargs':{"postfix":"번", "allow_empty": False}},
+                        {'fields': '도선등급', 'address': 'G6', "callback":str_deco, 'kargs':{"postfix":"등", "allow_empty": False}},
+                        {'fields': '도선명', 'address': 'I6', "callback":str_deco, 'kargs':{"postfix":"도선", "allow_empty": False}},
+                        {'fields': '표지재질', 'address': 'L6'},
+                        {'fields':['토지소재(동리)', '토지소재(지번)'], 'address': 'B8', 'callback': str_add, 'kargs':{'delim': ' ', 'postfix': "번지"}},  
+                        {'fields': '지적(임야)도', 'address': 'L8', "callback":str_deco, 'kargs':{"postfix":"호", "allow_empty": False}},
+                        {'fields': '설치년월일', 'address': 'A12', 'callback': hangul_date},
+                        {'fields': 'X', 'address': 'B12', 'callback':osa},
+                        {'fields': 'Y', 'address': 'G12', 'callback':osa},
+                        {'fields': '경위도(B)', 'address': 'I13', 'callback':toBL},
+                        {'fields': '경위도(L)', 'address': 'K13', 'callback':toBL},
+                        {'fields': '원점', 'address': 'B18'},
+                        {'fields': '표고', 'address': 'K18'},
+                        {'fields': '조사년월일', 'address': 'A34', 'callback': hangul_date},
+                        {'fields': '조사자(직)', 'address': 'B34'},
+                        {'fields': '조사자(성명)', 'address': 'F34'},
+                        {'fields': '조사내용', 'address': 'H34'},
+                        {'fields': ['사진파일(경로)', '위성사진'], 'address': "A22:G30", 'callback': insert_image, 'kargs':{'keep_ratio': False}},
+                        {'fields': ['사진파일(경로)', '사진파일명'], 'address': "H22:L30", 'callback': insert_image, 'kargs':{'keep_ratio': False}}
+            ] 
 
             try:
-                # 실제 성과표 작성
-                temporary_path = '_temp.xlsx'
-                success = self.copy_resource_to_file(self.TEMPLATE, temporary_path)
-                if not success:
-                    self.status_message.setText("[성과표] 파일 복사에 실패했습니다.")
-                    raise FileExistsError("파일 복사에 실패했습니다.")
-                
-                reporter = ReportFromDataframe(template=temporary_path, sheetname='서식', savefile=fileName, dataframe=table_df, 
-                                            max_row=26, border_settings=border_settings, mappings=mappings)
+                # 실제 성과표(구) 작성
+                temporary_path = '____기준점성과표.xlsx'
+                # success = self.copy_resource_to_file(self.TEMPLATE, temporary_path)
+                # 실제 성과표(신) 작성
+                # success = self.copy_resource_to_file(self.TEMPLATE2, temporary_path)
+                # if not success:
+                #     self.status_message.setText("[성과표] 파일 복사에 실패했습니다.")
+                #     raise FileExistsError("파일 복사에 실패했습니다.")
+
+                  
+                # 구 성과표
+                # reporter = ReportFromDataframe(template=temporary_path, sheetname='서식', savefile=fileName, dataframe=table_df, 
+                #                             max_row=26, border_settings=border_settings, mappings=mappings)
+                # 
+                reporter = ReportFromDataframe(template=temporary_path, savefile=fileName, dataframe=table_df, 
+                                            max_row=38, border_settings=border_settings, mappings=mappings)
                 reporter.report()
-                self.status_message.setText(f"성과표가 성공적으로 저장되었습니다: {fileName}")
-                self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[성과표]가 성공적으로 저장되었습니다.\n{fileName}")
+                self.status_message.setText(f"[기준점성과표]가 성공적으로 저장되었습니다: {fileName}")
+                self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[기준점성과표]가 성공적으로 저장되었습니다.\n{fileName}")
 
             except FileExistsError as e:
-                self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[성과표]파일 복사에 실패했습니다.")
+                self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[기준점성과표] 파일 복사에 실패했습니다.")
                 return
-
 
     def on_update_code(self):
         try:

@@ -242,6 +242,7 @@ def _copy_sheet_attributes(template_sheet: openpyxl.worksheet.worksheet.Workshee
         target_sheet.column_dimensions[key].hidden = copy(template_sheet.column_dimensions[key].hidden)
 
 def _copy_templates2(sheet: openpyxl.worksheet.worksheet.Worksheet, repeats: int=1, max_row: int=None) -> None:
+
     for i in range (1, max_row + 1):
         for j in range (1, sheet.max_column + 1):
             # Assign source cell value
@@ -252,9 +253,9 @@ def _copy_templates2(sheet: openpyxl.worksheet.worksheet.Worksheet, repeats: int
             for n in range(1, repeats):
                 sheet.cell(row = i + n*max_row, column = j).value = cell_src.value
                 sheet.cell(row = i + n*max_row, column = j).fill = copy(cell_src.fill)
-                sheet.cell(row = i + n*max_row, column = j).font  = copy(cell_src.font )
-                sheet.cell(row = i + n*max_row, column = j).border  = copy(cell_src.border )
-                sheet.cell(row = i + n*max_row, column = j).alignment  = copy(cell_src.alignment )
+                sheet.cell(row = i + n*max_row, column = j).font = copy(cell_src.font )
+                sheet.cell(row = i + n*max_row, column = j).border = copy(cell_src.border )
+                sheet.cell(row = i + n*max_row, column = j).alignment = copy(cell_src.alignment )
                 sheet.row_dimensions[i+n*max_row] = r_dim
 
 def _copy_cells(template_sheet: openpyxl.worksheet.worksheet.Worksheet, target_sheet: openpyxl.worksheet.worksheet.Worksheet, repeats: int=1, max_row: int=None) -> None:
@@ -413,11 +414,13 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
         return
 
     # DimensionHolder로 열너비 재설정
-    column_width = [17.625, 8.625, 3.125, 3.125, 2.505, 2.505, 2.505, 2.875, 2.505, 1.625, 2.005, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755]
-    dim_holder = DimensionHolder(worksheet=sheet)
-    for i, w in enumerate(column_width):
-        dim_holder[get_column_letter(i+1)] = ColumnDimension(worksheet=sheet, min=i+1, max=i+1, width=w)
-    sheet.column_dimensions = dim_holder
+    # 구 성과표
+    # column_width = [17.625, 8.625, 3.125, 3.125, 2.505, 2.505, 2.505, 2.875, 2.505, 1.625, 2.005, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755, 1.755]
+    # column_width = [15.625, 2.125, 2.125, 8.625, 2.125, 2.125, 7.125, 9.375, 9.125, 6.625, 6.125, 8.625]
+    # dim_holder = DimensionHolder(worksheet=sheet)
+    # for i, w in enumerate(column_width):
+    #     dim_holder[get_column_letter(i+1)] = ColumnDimension(worksheet=sheet, min=i+1, max=i+1, width=w)
+    # sheet.column_dimensions = dim_holder
     
     # image_path to Image object
     image = Image(src)
@@ -429,6 +432,7 @@ def insert_image(sheet: openpyxl.worksheet.worksheet.Worksheet, rng: str, src: s
         # cell width to accumulated list(unit: EMU)
         r_to_EMU = lambda x: pixels_to_EMU(_ch_px(x)) - 4 / (_get_windows_dpi() / 72)
         widths = [r_to_EMU(sheet.column_dimensions[get_column_letter(column+1)].width) for column in range(c_left, c_right)]
+        # widths = [r_to_EMU(column_width[column]) for column in range(c_left, c_right)]
         accum_width = [sum(widths[:i+1]) for i in range(len(widths))]
         cw = accum_width[-1]
 
@@ -516,8 +520,8 @@ def cell_shift(rng: str, **kargs) -> str:
     return str, 이동된 주소값, ex) 'F12', 'D3:F6'
     """
     _ranges = CellRange(rng)
-    rowshift = 0 if kargs.get('row_shift') is None else kargs.get('row_shift')
-    colshift = 0 if kargs.get('col_shift') is None else kargs.get('col_shift')
+    rowshift = kargs.get('row_shift', 0)
+    colshift = kargs.get('col_shift', 0)
     _ranges.shift(row_shift=rowshift, col_shift=colshift)
     return _ranges.coord
 
