@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtGui import QScreen
-from PySide6.QtCore import QUrl, Signal
+from PySide6.QtCore import Signal
 import sys
 import os
 from __api_key import VWorldApiKey

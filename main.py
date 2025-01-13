@@ -1348,15 +1348,6 @@ class CcpManager(QMainWindow):
         self.toolbar = QToolBar()
         self.toolbar.setWindowTitle('MainToolbar')
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
-        
-
-        # open_action = QAction(QIcon(':/icons/album-svgrepo-com.svg'), '열기', self)
-        # # open_action.triggered.connect(self.open_image)
-        # self.toolbar.addAction(open_action)
-
-        # save_action = QAction(QIcon(':/icons/diskette-svgrepo-com.svg'), '저장', self)
-        # # save_action.triggered.connect(self.save_image)
-        # self.toolbar.addAction(save_action)
 
         self.change_mode_toggle = CustomToggleButton()
 
@@ -1816,16 +1807,16 @@ class CcpManager(QMainWindow):
                 item = self.rtk_table_widget.item(row, col)
                 row_items.append(item.text().strip())
 
-            record_sheet[f'B{17+row}'].value = row_items[0]   # 번호
-            record_sheet[f'C{17+row}'].value = row % 2 + 1    # 세션
-            record_sheet[f'D{17+row}'].value = row_items[1][2:]   # 관측시간-시작
-            record_sheet[f'G{17+row}'].value = row_items[2][2:]   # 관측시간-종료
-            record_sheet[f'I{17+row}'].value = row_items[4]   # 수평
-            record_sheet[f'K{17+row}'].value = row_items[5]   # 수직
-            record_sheet[f'L{17+row}'].value = 1.8            # 안테나고
+            record_sheet[f'B{17+row}'].value = row_items[0]         # 번호
+            record_sheet[f'C{17+row}'].value = row % 2 + 1          # 세션
+            record_sheet[f'D{17+row}'].value = row_items[1][2:]     # 관측시간-시작
+            record_sheet[f'G{17+row}'].value = row_items[2][2:]     # 관측시간-종료
+            record_sheet[f'I{17+row}'].value = row_items[4]         # 수평
+            record_sheet[f'K{17+row}'].value = row_items[5]         # 수직
+            record_sheet[f'L{17+row}'].value = 1.8                  # 안테나고
             record_sheet[f'M{17+row}'].value = f'{float(row_items[13]):.2f}'  # PDOP
-            record_sheet[f'O{17+row}'].value = row_items[17]  # 위성수
-            record_sheet[f'P{17+row}'].value = '15˚'  # 위성고도각
+            record_sheet[f'O{17+row}'].value = row_items[17]        # 위성수
+            record_sheet[f'P{17+row}'].value = '15˚'                # 위성고도각
 
         max_row = record_sheet.max_row
         rng = record_sheet[f'A17:P{max_row}']
@@ -2363,14 +2354,9 @@ class CcpManager(QMainWindow):
 
             try:
                 # 실제 성과표(구) 작성
-                temporary_path = '____기준점성과표.xlsx'
+                temporary_path = '_기준점성과표.xlsx'
                 # success = self.copy_resource_to_file(self.TEMPLATE, temporary_path)
-                # 실제 성과표(신) 작성
-                # success = self.copy_resource_to_file(self.TEMPLATE2, temporary_path)
-                # if not success:
-                #     self.status_message.setText("[성과표] 파일 복사에 실패했습니다.")
-                #     raise FileExistsError("파일 복사에 실패했습니다.")
-
+                self.copy_resource_to_file(self.TEMPLATE2, temporary_path)
                   
                 # 구 성과표
                 # reporter = ReportFromDataframe(template=temporary_path, sheetname='서식', savefile=fileName, dataframe=table_df, 
