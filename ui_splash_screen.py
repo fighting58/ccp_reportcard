@@ -8,16 +8,8 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QFrame, QGridLayout, QHBoxLayout,
-    QLabel, QMainWindow, QSizePolicy, QVBoxLayout,
-    QWidget)
+from PySide6.QtCore import (QCoreApplication,  QMetaObject, QSize, Qt)
+from PySide6.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget)
 
 class Ui_SplashScreen(object):
     def setupUi(self, SplashScreen):
@@ -138,6 +130,6 @@ class Ui_SplashScreen(object):
         SplashScreen.setWindowTitle(QCoreApplication.translate("SplashScreen", u"Loading...", None))
         self.loading.setText(QCoreApplication.translate("SplashScreen", u"Loading...", None))
         self.title.setText(QCoreApplication.translate("SplashScreen", u"지적기준점 성과표", None))
-        self.version.setText(QCoreApplication.translate("SplashScreen", u"v1.0.0 - Beta 1", None))
+        self.version.setText(QCoreApplication.translate("SplashScreen", u"v1.1.0 - Beta 1", None))
     # retranslateUi
 

@@ -1,7 +1,6 @@
 import openpyxl_addin as oa
 import openpyxl
 import pandas as pd
-from copy import copy
 
 
 class ReportFromDataframe():

@@ -1,6 +1,5 @@
-from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, 
-                              QHBoxLayout, QFormLayout, QGridLayout, QListWidget, QComboBox, 
-                              QLineEdit, QDialog, QMenu)
+from PySide6.QtWidgets import (QApplication, QPushButton, QHBoxLayout, QFormLayout, QGridLayout, 
+                               QListWidget, QComboBox, QLineEdit, QDialog, QMenu)
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QAction
 
@@ -39,7 +38,6 @@ class CustomListWidget(QListWidget):
             self.takeItem(self.row(item))
         self.item_removed.emit(selected_items[0].text())
 
-
     def deleteAllItems(self):
         self.clear()
         self.list_cleared.emit()
@@ -53,7 +51,6 @@ class Settings(QDialog):
         self.settings = None
 
         self.load_config()
-
 
     def setup_UI(self):
 

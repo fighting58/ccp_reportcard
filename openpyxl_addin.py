@@ -6,12 +6,10 @@ from openpyxl.utils.units import pixels_to_EMU, cm_to_EMU, EMU_to_pixels, EMU_to
 from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor, AnchorMarker, OneCellAnchor
 from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.utils.cell import get_column_letter, column_index_from_string, coordinate_from_string, range_boundaries
-from openpyxl.worksheet.dimensions import ColumnDimension, DimensionHolder
 from copy import copy
 import ctypes
 import shutil
 import numpy as np
-from datetime import datetime, timedelta
 
 from tkinter import Tk
 from tkinter.font import Font as TkFont

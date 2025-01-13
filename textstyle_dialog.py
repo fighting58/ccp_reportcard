@@ -1,9 +1,9 @@
 
 
 from PySide6.QtWidgets import (QDialog, QFrame, QLabel, QHBoxLayout,QGridLayout, QColorDialog, QPushButton, 
-                               QFormLayout, QWidget, QLineEdit, QComboBox, QSpinBox, QDialogButtonBox, QCheckBox)
+                               QFormLayout, QComboBox, QSpinBox, QDialogButtonBox, QCheckBox)
 from PySide6.QtCore import Qt, QRect, Signal
-from PySide6.QtGui import QColor, QFont, QPen, QBrush, QPixmap, QPainter, QFontDatabase, QPalette
+from PySide6.QtGui import QColor, QFont, QPen, QPixmap, QPainter, QFontDatabase
 from environment_manage import EnvironmentManager
 
 class TextStyleDialog(QDialog):
@@ -20,9 +20,7 @@ class TextStyleDialog(QDialog):
         self.text_font_style = "Normal"
 
         self.font_color = QColor('#0000ff')
-        self.envrioment_manager = EnvironmentManager('image_editor.ini')
-        config_dict = self.envrioment_manager.get_section('SubTitle-Style')
-
+        self.envrioment_manager = EnvironmentManager('image_editor.ini')        
         self.read_environment('SubTitle-Style')
 
         self.init_ui()

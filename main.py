@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFileDialog, 
                                 QHeaderView, QTableWidgetItem, QStatusBar, QLabel, QFrame, QScrollArea,
                                 QCheckBox, QVBoxLayout, QHBoxLayout, QSpacerItem, QDockWidget, QGroupBox, 
                                 QSizePolicy, QAbstractItemView, QMenu, QLabel, QComboBox, QInputDialog, 
-                                QSpinBox, QDialog, QGraphicsDropShadowEffect, QTextBrowser)
+                                QDialog, QGraphicsDropShadowEffect, QTextBrowser)
 from PySide6.QtCore import Qt, QRect, Signal, QTimer, Slot, QSize, QFile, QIODevice, QTextStream
 from PySide6.QtGui import QFontMetrics, QKeySequence, QPainter, QPen, QColor, QIcon, QAction, QFont
 import resources
@@ -18,13 +18,11 @@ from shp2report import ReportFromDataframe
 from shp2report_callbacks import insert_image, str_add, str_deco, hangul_date, toBL, osa
 from cif_converter import CifGeoDataFrame
 import pickle
-from pathlib import Path
 from CodeDownload_codegokr import CodeGoKr
 from custom_image_editor import ImageEditor
 from rename_image_with_tr import DialogRenameImage
 from openpyxl import load_workbook
-from openpyxl.workbook import Workbook
-from openpyxl.worksheet.page import PageMargins, PrintPageSetup
+from openpyxl.worksheet.page import PageMargins
 from openpyxl_addin import set_alignment, set_border, set_font, copy_row_with_merge, format_date_to_korean, convert_decimal_to_roundup_angle
 from datetime import datetime, timedelta
 import random
