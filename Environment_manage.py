@@ -14,8 +14,10 @@ class EnvironmentManager:
     
     def get_all_user(self):
         sections = self.get_all_section_names()
-        if "CUR_USER" in sections:
-           sections.remove("CUR_USER")
+        for section in ['CUR_USER', 'VWORLD_API_SETTINGS']:
+            if section in sections:
+                sections.remove(section)
+
         return sections
 
     def get_section(self, section_name) -> dict:

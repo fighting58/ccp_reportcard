@@ -4,14 +4,13 @@ from PySide6.QtGui import QScreen
 from PySide6.QtCore import Signal
 import sys
 import os
-from __api_key import VWorldApiKey
 from pyproj import Transformer
 
 class VWorldPintMapHtmlCreator:
     def __init__(self, x, y, **kargs):
         self.x = x
         self.y = y
-        self.api_key = kargs.get("api_key", VWorldApiKey().KEY)
+        self.api_key = kargs.get("api_key", '')
         self.name = kargs.get("name", "POINT")
         self._html_template = """
             <html>
@@ -112,10 +111,11 @@ class VWorldMapViewer(QDialog):
         super().__init__(parent)
         self.x = x
         self.y = y
+        self.setParent(parent)
         self.name = kargs.get("name", "POINT")
         self.path = kargs.get("path", '.')
         self.row = kargs.get("row", None)
-        self.parent = parent
+        self.api_key = kargs.get("api_key", '')
         self.apply_transform = kargs.get("apply_transform", False)
         if self.apply_transform:
             self.x, self.y = self.transform(reverse=True) # 세계좌표를 경위도 좌표로 변환
@@ -134,7 +134,7 @@ class VWorldMapViewer(QDialog):
         self.capture_button.clicked.connect(self.capture_screen)
         layout.addWidget(self.capture_button)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.web_view.setHtml(VWorldPintMapHtmlCreator(str(self.x), str(self.y), name=self.name).html)
+        self.web_view.setHtml(VWorldPintMapHtmlCreator(str(self.x), str(self.y), name=self.name, api_key=self.api_key).html)
 
     def transform(self, **kargs):
         """좌표 변환
@@ -168,9 +168,8 @@ class VWorldMapViewer(QDialog):
         save_path = os.path.join(self.path, filename)
         screen.save(save_path, "png")
         if self.row is not None:
-            if self.parent is not None:
-                print(self.parent)
-                self.parent.show_modal("success", parent=self.web_view, title=" Saving Success", description=f"위성사진이 성공적으로 저장되었습니다.\n{filename}")
+            if self.parent() is not None:
+                self.parent().show_modal("success", parent=self.web_view, title=" Saving Success", description=f"위성사진이 성공적으로 저장되었습니다.\n{filename}")
             self.save_sat_image_request.emit(self.row, filename)
 
 

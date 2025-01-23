@@ -1238,7 +1238,12 @@ class CcpManager(QMainWindow):
         num = self.table_widget.item(row, 0).text()
         x = self.table_widget.item(row, 2).text()
         y = self.table_widget.item(row, 1).text()
-        vworld_dlg = VWorldMapViewer(float(x), float(y), name=num, path=path, apply_transform=True, row=row, parent=self)
+        api_key =  self.settings.get_section("VWORLD_API_SETTINGS").get("api_key", '')
+        if api_key == '':
+            self.show_modal("error", parent=self.main_frame, title=" Empty API Key", description="vworld api key가 입력되지 않아 위성사진을 불러올 수 없습니다.")
+            return
+
+        vworld_dlg = VWorldMapViewer(float(x), float(y), name=num, path=path, apply_transform=True, row=row, parent=self, api_key=api_key)
         vworld_dlg.save_sat_image_request.connect(self.on_save_sat_image)
         vworld_dlg.exec()
         ##############################################################
@@ -2401,7 +2406,7 @@ class CcpManager(QMainWindow):
             return stylesheet
 
     def show_settings_dialog(self):        
-        dialog = Settings()
+        dialog = Settings(parent=self)
         dialog.setObjectName("settings")
         dialog.setStyleSheet(self.get_stylesheet_from_resource(':resources/styles/dialogrenameimage.qss'))
         
@@ -2414,7 +2419,7 @@ class CcpManager(QMainWindow):
         if current_user is None:
             return
         users = self.settings.get_all_user()
-        self.surveyor_name.clear()
+        self.surveyor_name.clear()        
         self.surveyor_name.addItems(["팀 선택"] + users)
         if current_user in users:
             self.surveyor_name.setCurrentIndex(users.index(current_user) + 1)
@@ -2427,7 +2432,7 @@ class CcpManager(QMainWindow):
 
     def surveyor_changed(self):
         user = self.surveyor_name.currentText()
-        if user != "팀 선택":
+        if user != "팀 선택" and self.input_rtkdata_button.isChecked():
             self.settings.add_section("CUR_USER", {"user": self.surveyor_name.currentText()})
             user_data = self.settings.get_section(user)
             self.surveyor_grade.setCurrentText(user_data["grade"])

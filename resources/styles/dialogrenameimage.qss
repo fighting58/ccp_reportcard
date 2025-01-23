@@ -3,6 +3,31 @@ QWidget {
     background-color: transparent;
     }
 
+#setting_tab::pane {
+    background: transparent;
+    border: none;
+    }
+
+#setting_tab > QTabBar::tab {
+    background: transparent;
+    border: 1px solid white;
+    border-radius: 5px;
+    padding: 5px 20px 5px 20px;
+    }
+
+#setting_tab > QTabBar::tab:selected {
+        background: rgba(255, 255, 255, 0.3); /* Semi-transparent background for selected tab */
+    }
+
+#setting_tab > QTabBar::tab:hover {
+        border: 1px solid red;
+    }
+
+
+#setting_tab {
+    background: transparent;
+    }
+
 #dialogrenameimage, #settings { 
     background-image: url(':resources/images/background2.png');
     padding: 3px;
