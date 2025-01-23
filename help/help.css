@@ -23,6 +23,9 @@ body {
 .subtitle-3 {
     font-size: 1.4rem;
 }
+.subtitle-4 {
+    font-size: 1.3rem;
+}
 ol > li, ul > li {
     margin: 1rem 0;
 }

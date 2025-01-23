@@ -4,6 +4,8 @@ from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QAction
 
 from environment_manage import EnvironmentManager
+from QCustomModals import QCustomModals
+
 import sys
 
 class CustomListWidget(QListWidget):
@@ -46,10 +48,9 @@ class Settings(QDialog):
     def __init__(self, parent=None):
         super().__init__()
         self.setWindowTitle("환경 설정")
-        self.resize(500, 266)
+        self.resize(500, 246)
         self.setup_UI()
         self.settings = None
-        self.setParent(parent)
         self.api_key = ''
         self.expiring_date = ''
 
@@ -60,8 +61,9 @@ class Settings(QDialog):
         main_layout= QGridLayout(self)
         main_layout.setSpacing(20)
 
-        self.setting_tab = QTabWidget(self)
+        self.setting_tab = QTabWidget(self)        
         self.setting_tab.setObjectName("setting_tab")
+        self.setting_tab.setFixedHeight(200)
         tab1 = QWidget(self)        
         # 사용자 추가
         control_layout = QHBoxLayout(tab1)
@@ -159,8 +161,7 @@ class Settings(QDialog):
         grade = self.user_grade.text().strip()
         machine_serial = self.machine_serial.text().strip()
         if any(key=='' for key in [section, license, grade, machine_serial]):
-            if self.parent() is not None:
-                self.parent().show_modal("error", parent=self.setting_tab, title=" Empty Field", description="누락된 입력값이 있습니다. 입력된 값을 확인하세요.")
+            self.show_modal("error", parent=self.setting_tab, title=" Empty Field", description="누락된 입력값이 있습니다. 입력된 값을 확인하세요.")
             return
         key_value_pairs = {"license": license, "grade": grade, "machine_serial": machine_serial}
         self.settings.add_section(section, key_value_pairs)
@@ -172,13 +173,28 @@ class Settings(QDialog):
         expiring_date = self.expiring_date_input.text().strip()
 
         if any(key=='' for key in [api_key, expiring_date]):
-            if self.parent() is not None:
-                  self.parent().show_modal("error", parent=self.setting_tab, title=" Empty Field", description="API 키 또는 인증 만료 날짜가 입력되지 않았습니다.")
+            self.show_modal("error", parent=self.setting_tab, title=" Empty Field", description="API 키 또는 인증 만료 날짜가 입력되지 않았습니다.")
             return
 
         key_value_pairs = {"api_key": api_key, "expiring_date": expiring_date}
         self.settings.add_section(section, key_value_pairs)
         self.load_config()
+    
+    def show_modal(self, modal_type, **kargs):
+        """ 메시지 송출 """
+        default_settings = {'position': 'bottom-right', 'duration': 2000, 'closeIcon': ':resources/icons/x.svg'}
+        modal_collection = {'info':QCustomModals.InformationModal, 
+                            'success':QCustomModals.SuccessModal, 
+                            'error':QCustomModals.ErrorModal, 
+                            'warning':QCustomModals.WarningModal, 
+                            'custom':QCustomModals.CustomModal}
+        if modal_type not in ['info', 'success', 'error', 'warning', 'custom']: modal_type = 'custom'
+
+        for key, value in kargs.items():
+            default_settings[key] = value    
+
+        modal = modal_collection[modal_type](**default_settings)
+        modal.show()
 
 
 if __name__ == "__main__":

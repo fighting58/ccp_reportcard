@@ -2406,7 +2406,7 @@ class CcpManager(QMainWindow):
             return stylesheet
 
     def show_settings_dialog(self):        
-        dialog = Settings(parent=self)
+        dialog = Settings()
         dialog.setObjectName("settings")
         dialog.setStyleSheet(self.get_stylesheet_from_resource(':resources/styles/dialogrenameimage.qss'))
         
