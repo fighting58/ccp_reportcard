@@ -99,8 +99,9 @@
                     <p class="explanation"> 기준점번호와 관측시간을 기준으로 표를 정렬합니다.</p>                    
                 <p class="subtitle-3"> (3) 타임 조정</p>                                    
                     <p class="explanation"> 관측시간 간격(데이터 취득간격 60초 이상, 관측간격 60분 이상)을 조정합니다.</p>
-                    <p class="explanation"> 조정에 의해 변경된 시각은 붉은색으로 표시됩니다.</p>
                     <p class="explanation"> 1회 관측시작시간을 기준으로 조정되며 2회 관측시간은 다른 기준점 관측시간과 중복될 수 있음을 숙지하시기 바랍니다.</p>                    
+                    <p class="explanation"> 조정에 의해 변경된 시각은 붉은색으로 표시됩니다. </p>
+                    <p class="explanation"> * <span class='highlight'>변경된 내용은 예시이며, 기타 관측방법에 대한 검증은 "GNSS에 의한 지적측량규정"을 참고하시기 바랍니다.</span></p>
                 <p class="subtitle-3"> (4) Cif/Shp 입력</p> 
                     <p class="explanation"> Cif 또는 Shp파일을 입력하여 해당 기준점이 위치한 소재지, 지번, 도호를 가져옵니다.</p>
                     <p class="explanation"> Cif를 Shp로 변환하려면 LXGIS를 통해 생성하거나 랜디고에서 Shp로 내보내기 기능을 통해 변환할 수 있습니다.</p>
@@ -271,30 +272,20 @@
             <p class="subtitle-1"> 7. VWorld API Key 발급</p> 
             <div class="content-2">                     
                 <p class="subtitle-2"> 1) 회원가입</p>
-                    <p class="explanation"> <a href ="www.vworld.kr">V-World</a> 사이트로 이동하여 회원가입을 합니다.</p>
+                    <p class="explanation"> <a href ="http://www.vworld.kr">V-World</a> 사이트로 이동하여 회원가입을 합니다.</p>
                     <p class="explanation"> 회원가입 방법은 생략하겠습니다.</p>            
-                <p class="subtitle-2"> 2) 오픈API 인증키 발급</p>
-                <p class="image"><img src="./images/5_2-사진편집모드.png" alt="tr.dat 입력" style="width: 80rem;" /></p>                        
-                    <p class="explanation"> 표는 사진이 저장된 폴더와 파일명에 컬럼에 맞도록 다른 컬럼들은 숨겨집니다.</p>
-                    <p class="explanation"> 표 위에서 각 번호별로 더블클릭하면 해당 사진을 편집하실 수 있습니다.</p>
-                    <p class="explanation"> 사진파일명과 기준점번호가 일치하면 즉시 사진이 보여지며 일치하지 않으면 [불러오기]버튼(<img src="./images/5_3-사진불러오기.png" />)을 통해 사진을 입력합니다.</p>
-                    <p class="explanation"> 상태 표시줄에 편집 중인 사진 정보가 표현됩니다.</p>                        
-                <p class="image"><img src="./images/5_4-사진편집1.png" alt="사진편집1" style="width: 80rem;" /></p>                        
-                    <p class="explanation"> [거리입력]버튼(<img src="./images/5_5-거리입력.png" alt="거리입력" />, 단축키: Ctrl+L)을 통해 거리를 입력할 수 있습니다.</p>
-                    <p class="explanation"> 시작점-끝점-거리입력 지점을 순차적으로 누르고 현장에서 측정한 거리를 입력합니다.</p>
-                    <p class="explanation"> 단순 문자는 [텍스트 입력]버튼(<img src="./images/5_6-문자입력.png" />, 단축키: Cntl+T)을 통해 입력할 수 있습니다..</p>
-                    <p class="explanation"> 입력된 선은 선택하여 각 점을 이동할 수 있고, 문자는 더블클릭하여 내용을 수정할 수 있습니다.</p>
-                    <p class="explanation"> 사진 편집기 메뉴 버튼을 이용하여 선 종류, 굵기, 색상 및 문자의 글꼴, 크기, 스타일, 색상 등도 변경할 수 있습니다.</p>                        
-                <p class="image"><img src="./images/5_7-사진편집2.png" alt="사진편집2" style="width: 80rem;" /></p>                        
-                    <p class="explanation"> 문자 선택 후 [문자 스타일]버튼(<img src="./images/5_8-문자스타일.png" alt="문자스타일" />)을 통해 더 세부적인 설정을 할 수 있습니다.</p>
-                    <p class="image"><img src="./images/5_9-문자스타일-항목.png" alt="스타일-항목" style="width:35rem;" /> <img src="./images/5_10-문자스타일-제목.png" alt="스타일-제목" style="width:35rem;" /></p>
-                    <p class="explanation"> 제목, 항목 2가지 스타일을 지원하며 테두리선 및 글꼴, 배경색 등에 대해 각각 개인별로 지정할 수 있습니다. 체크박스 선택 후 [Ok]버튼을 누르면 저장됩니다.</p>                        
-                <p class="image"><img src="./images/5_11-사진편집3.png" alt="사진편집3" style="width: 80rem;" /></p>                        
-                    <p class="explanation"> 사진 편집이 끝나면 <span class="highlight">[저장 및 적용]버튼(<img src="./images/5_12-저장및적용.png" alt="저장및적용" />, 단축키: Cntl+Enter)을 눌러야 최종 저장 및 반영</span>됩니다.</p> 
-                    <p class="explanation"> 정상적으로 반영되면 표에 저장폴더명과 파일명이 변경됩니다.</p>    
-                    <p class="explanation"> 이 때, 사진은 사진 폴더 내에 새로운 폴더 '_거리입력_'이 생성되고 그 안에 {기준점번호}_edit.png 형식으로 저장됩니다.</p>
-                    <p class="explanation"> 나머지 기준점들에 대해서도 같은 방법으로 사진을 편집하고, 표 편집모드로 변경하여 성과표 내보내기와 같은 작업을 진행합니다.</p>
-                <p class="image"><img src="./images/5_13-사진편집4.png" alt="사진편집4" style="width: 80rem;" /></p>
+                <p class="subtitle-2"> 2) 인증키 발급</p>
+                    <p class="image"><img src="./images/7_1_오픈api네비게이션.png" alt="오픈api 네비게이션" style="width: 60rem;" /></p>                        
+                    <p class="explanation"> 네비게이션 메뉴를 통해 오픈API 인증키 발급페이지로 이동합니다.</p>                                           
+                    <p class="image"><img src="./images/7_1_인증키발급.png" alt="인증키발급예" style="width: 80rem;" /></p>                        
+                    <p class="explanation"> 위 이미지를 참고하여 발급요청 양식을 작성한 후 발급버튼을 눌러 인증키를 요청합니다.</p>  
+                <p class="subtitle-2"> 3) 인증키 관리</p>
+                    <p class="image"><img src="./images/7_1_오픈api네비게이션2.png" alt="오픈api 네비게이션" style="width: 60rem;" /></p>                        
+                    <p class="explanation"> 네비게이션 메뉴를 통해 오픈API 인증키 관리페이지로 이동합니다.</p>     
+                <p class="image"><img src="./images/7_1_인증키관리.png" alt="인증키 관리" style="width: 80rem;" /></p>  
+                    <p class="explanation"> 인증키 발급 이력을 확인할 수 있으며, 발급받은 인증키를 선택하면 자세한 내용을 확인할 수 있습니다.</p>
+                    <p class="explanation"> 개발키의 유효기간은 6개월이며, 최대 3회 연장가능합니다.</p>
+                <p class="image"><img src="./images/7_1_인증키관리2.png" alt="인증키 관리" style="width: 80rem;" /></p>                     
             </div>
         </div>            
     </div>
