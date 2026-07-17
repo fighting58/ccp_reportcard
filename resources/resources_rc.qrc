@@ -47,7 +47,10 @@
     <file>icons/toggle-on-circle.svg</file>
     <file>icons/x.svg</file>
     <file>icons/xlsx-file.svg</file>
-    <file>templates/RTK_TEMPLATE.xlsx</file>
+    <file>templates/RTK_TEMPLATE_RECORD.xlsx</file>
+    <file>templates/RTK_TEMPLATE_RESULT.xlsx</file>
+    <file>templates/RTK_TEMPLATE_COVER.xlsx</file>
+    <file>templates/RTK_TEMPLATE_ILRAM.xlsx</file>
     <file>templates/template.xlsx</file>
     <file>templates/template2.xlsx</file>
     <file>styles/main_ui.qss</file>

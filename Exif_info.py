@@ -184,8 +184,8 @@ def show_on_kakao(tag:str, lon:float, lat:float) -> None:
 
 
 if __name__ == "__main__":
-    image1 = '_사진Exif/updated_0.jpg'
-    image2 = 'Exif_info/202409041527190009.jpg'
+    image1 = 'Exif_info\\10232.jpg'
+    image2 = 'Exif_info\\_exif\\2.jpg'
     # image3 = 'Exif_info/202409041547290009.jpg'
     from coordinate_transform import CoordinateTransformer
     import webbrowser

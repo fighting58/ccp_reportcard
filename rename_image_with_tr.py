@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt
 import numpy as np
 from coordinate_transform import CoordinateTransformer
 from geometric_search import find_features_within_buffer, convert_to_geodataframe
-from Exif_info import get_gps_info
+from exif_info import get_gps_info
 
 class DialogRenameImage(QDialog):
     def __init__(self):

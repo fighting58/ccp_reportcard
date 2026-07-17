@@ -513,7 +513,10 @@ class CcpManager(QMainWindow):
                    'PDOP', 'HDOP', 'VDOP', '장비', '위성수', '솔루션', '사진', '재질', '토지소재(동리)', '토지소재(지번)', '지적(임야)도']
     TEMPLATE = ':resources/templates/template.xlsx'
     TEMPLATE2 = ':resources/templates/template2.xlsx'
-    RTK_TEMPLATE = ':resources/templates/RTK_TEMPLATE.xlsx'
+    RTK_TEMPLATE_RECORD = ':resources/templates/RTK_TEMPLATE_RECORD.xlsx'
+    RTK_TEMPLATE_RESULT = ':resources/templates/RTK_TEMPLATE_RESULT.xlsx'
+    RTK_TEMPLATE_COVER = ':resources/templates/RTK_TEMPLATE_COVER.xlsx'
+    RTK_TEMPLATE_ILRAM = ':resources/templates/RTK_TEMPLATE_ILRAM.xlsx'
     
 
     def __init__(self):
@@ -915,19 +918,22 @@ class CcpManager(QMainWindow):
         self.column_hide.setObjectName("column-hide")
         self.column_hide.setToolTip("컬럼 숨기기")
         self.column_hide.setFixedWidth(30)
-        self.fill_number = QPushButton(icon=QIcon(':resources/icons/fill-numbers.svg'), parent=self)
+        self.fill_number = QPushButton(self)
+        self.fill_number.setIcon(QIcon(':resources/icons/fill-numbers.svg'))
         self.fill_number.setIconSize(QSize(24, 24))
         self.fill_number.setObjectName("fill_number")
         self.fill_number.setToolTip("자동번호 입력")
         self.fill_number.setFixedWidth(30)
         self.temp_label1 = QLabel(self)
         self.temp_label1.setObjectName("temp_label1")
-        self.table_to_tr = QPushButton(icon=QIcon(':resources/icons/point_black.png'), parent=self)
+        self.table_to_tr = QPushButton(self)
+        self.table_to_tr.setIcon(QIcon(':resources/icons/point_black.png'))
         self.table_to_tr.setIconSize(QSize(24, 24))
         self.table_to_tr.setObjectName("table_to_tr")
         self.table_to_tr.setToolTip("tr.dat 저장")
         self.table_to_tr.setFixedWidth(30)
-        self.save_table = QPushButton(icon=QIcon(':resources/icons/diskette.svg'), parent=self)
+        self.save_table = QPushButton(self)
+        self.save_table.setIcon(QIcon(':resources/icons/diskette.svg'))
         self.save_table.setIconSize(QSize(24, 24))
         self.save_table.setObjectName("save_table")
         self.save_table.setToolTip("변경내용 저장(xlsx)")
@@ -1457,8 +1463,9 @@ class CcpManager(QMainWindow):
             return  False
 
         with open(destination_path, 'wb') as dest_file:
-            dest_file.write(resource.readAll())
-        
+            dest_file.write(resource.readAll().data())
+
+        resource.close()
         return True
 
     def loadRTKdata(self):
@@ -1690,7 +1697,7 @@ class CcpManager(QMainWindow):
     def rtk_cover(self):
         """ 표지 작성 """
         record_file = '_표지.xlsx'
-        template_path = self.RTK_TEMPLATE
+        template_path = self.RTK_TEMPLATE_COVER
         sheet_name = '@표지'
 
         try:
@@ -1702,16 +1709,12 @@ class CcpManager(QMainWindow):
         except FileExistsError:
             self.show_modal("error", parent=self.main_frame, title=" File Copy Failed", description=f"[표지] 파일 복사에 실패했습니다.")
             return
-            
+                    
+        
         new_wb = load_workbook(record_file)
         
         # Get the sheet to copy
         record_sheet = new_wb[sheet_name]
-
-        # Remove the default sheet created in the new workbook
-        for sht in new_wb.sheetnames:
-            if sheet_name != sht:
-                del new_wb[sht]        
 
         survey_count = self.rtk_table_widget.rowCount() // 2
         reception_number = self.reception_number.text().strip()
@@ -1752,7 +1755,7 @@ class CcpManager(QMainWindow):
     def rtk_record(self):
         """ 위성관측기록부 작성 """
         record_file = '_관측기록부.xlsx'
-        template_path = self.RTK_TEMPLATE
+        template_path = self.RTK_TEMPLATE_RECORD
         sheet_name = '@관측기록부'
 
         try:
@@ -1766,31 +1769,18 @@ class CcpManager(QMainWindow):
             return
             
         new_wb = load_workbook(record_file)
-        
+
         # Get the sheet to copy
         record_sheet = new_wb[sheet_name]
-
-        # Remove the default sheet created in the new workbook
-        for sht in new_wb.sheetnames:
-            if sheet_name != sht:
-                del new_wb[sht]        
-
         survey_count = self.rtk_table_widget.rowCount()
 
         copy_row_with_merge(record_sheet, 17, 17, survey_count-1)
 
-        try:
-            if survey_count % 2 == 1:
-                self.status_message.setText('관측기록이 짝수 회가 아닙니다.')
-                raise ValueError('관측기록이 짝수 회가 아닙니다.')
-        except ValueError:
-            self.show_modal("error", parent=self.main_frame, title=" Invalid Survey Count", description=f"관측기록이 짝수 회가 아닙니다.\n검사 후 다시 시도하세요.")
+        if survey_count % 2 == 1:
+            self.status_message.setText('관측기록이 짝수 회가 아닙니다.')
+            self.show_modal("error", parent=self.main_frame, title=" Invalid Survey Count", description="관측기록이 짝수 회가 아닙니다.\n검사 후 다시 시도하세요.")
+            new_wb.close()
             return
-
-        # set font, alignment, border style
-        set_font(record_sheet[f"B17:P{17 + survey_count-1}"], sz=9)
-        set_alignment(record_sheet[f"B17:P{17 + survey_count-1}"], horizontal='center', vertical='center')
-        set_border(record_sheet[f"B17:P{17 + survey_count-1}"], edges=["all"], border_style='thin')
         
         for col in range(17, 17+ survey_count):
             record_sheet.row_dimensions[col].height = 15
@@ -1822,8 +1812,10 @@ class CcpManager(QMainWindow):
             record_sheet[f'P{17+row}'].value = '15˚'                # 위성고도각
 
         max_row = record_sheet.max_row
-        rng = record_sheet[f'A17:P{max_row}']
+        rng = record_sheet[f'B17:P{max_row}']
         set_font(rng, sz=8, name="굴림")
+        set_alignment(record_sheet[f"B17:P{17 + survey_count-1}"], horizontal='center', vertical='center')
+        set_border(record_sheet[f"B17:P{17 + survey_count-1}"], edges=["all"], border_style='thin')
 
         # cell merge
         for row in range(17, 17+ survey_count, 2):
@@ -1839,6 +1831,7 @@ class CcpManager(QMainWindow):
         # Save the new workbook
         time_stamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         savas_filename = os.path.join(self.rtk_data_path, f'{time_stamp}_관측기록부.xlsx')
+
         new_wb.save(savas_filename)
         new_wb.close()
         self.show_modal("success", parent=self.main_frame, title=" Saving Success", description=f"[관측기록부]가 성공적으로 저장되었습니다.\n{savas_filename}")
@@ -1847,7 +1840,7 @@ class CcpManager(QMainWindow):
     def rtk_result(self):
         """ 위성관측결과부 작성 """
         record_file = '_관측결과부.xlsx'
-        template_path = self.RTK_TEMPLATE
+        template_path = self.RTK_TEMPLATE_RESULT
         sheet_name = '@관측결과부'
 
         try:
@@ -1865,11 +1858,6 @@ class CcpManager(QMainWindow):
         
         # Get the sheet to copy
         record_sheet = new_wb[sheet_name]
-
-        # Remove the default sheet created in the new workbook
-        for sht in new_wb.sheetnames:
-            if sheet_name != sht:
-                del new_wb[sht]        
 
         survey_count = self.rtk_table_widget.rowCount()//2
         copy_row_with_merge(record_sheet, 17, 17, survey_count-1)
@@ -1928,7 +1916,7 @@ class CcpManager(QMainWindow):
     def rtk_ilram(self):
         """ 지적기준점 일람표 작성 """
         record_file = '_기준점일람표.xlsx'
-        template_path = self.RTK_TEMPLATE
+        template_path = self.RTK_TEMPLATE_ILRAM
         sheet_name = '@기준점일람표'
 
         try:
@@ -1945,11 +1933,6 @@ class CcpManager(QMainWindow):
         
         # Get the sheet to copy
         record_sheet = new_wb[sheet_name]
-
-        # Remove the default sheet created in the new workbook
-        for sht in new_wb.sheetnames:
-            if sheet_name != sht:
-                del new_wb[sht]        
 
         survey_count = self.rtk_table_widget.rowCount()//2
         copy_row_with_merge(record_sheet, 17, 17, survey_count-1)
